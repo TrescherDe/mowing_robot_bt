@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<root main_tree_to_execute="BehaviorTree">
+    <!-- ////////// -->
+    <BehaviorTree ID="BehaviorTree">
+        <Sequence>
+            <Condition ID="CheckImageData"/>
+            <AlwaysSuccess name="ReactToDetection"/>
+        </Sequence>
+    </BehaviorTree>
+    <!-- ////////// -->
+    <TreeNodesModel>
+        <Condition ID="CheckImageData"/>
+    </TreeNodesModel>
+    <!-- ////////// -->
+</root>
