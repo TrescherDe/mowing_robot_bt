@@ -3,10 +3,16 @@
 
 #include "behaviortree_cpp_v3/condition_node.h"
 #include "rclcpp/rclcpp.hpp"
-#include <pybind11/embed.h>  // pybind11 for Python-C++ integration
+
 #include <cv_bridge/cv_bridge.hpp>
 #include <opencv2/opencv.hpp>
 #include "sensor_msgs/msg/image.hpp"
+
+// pybind11 for Python-C++ integration
+#include <pybind11/embed.h>  
+#include <pybind11/pybind11.h> 
+
+#pragma GCC visibility push(default)
 
 namespace py = pybind11;
 
@@ -25,11 +31,16 @@ private:
 
     rclcpp::Node::SharedPtr nh_;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
-    py::object detect_objects;  // Python function for detection
-    bool object_detected_ = false;
 
-    float threshold = 0.05;
-    float nms_threshold = 0.5;
+    // Add visibility attribute to detect_objects
+    pybind11::object detect_objects; // Member visibility matches the class
+
+    bool object_detected_ = false;
+    int compound_coef = 0;
+    float threshold = 0.8;
+    float nms_threshold = 0.05;
 };
+
+#pragma GCC visibility pop
 
 #endif // CHECK_IMAGE_DATA_HPP
