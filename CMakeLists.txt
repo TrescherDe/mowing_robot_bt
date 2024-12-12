@@ -6,15 +6,21 @@ find_package(ament_cmake REQUIRED)
 find_package(behaviortree_cpp_v3 REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)  # Add cv_bridge
+find_package(Python3 COMPONENTS Development REQUIRED)
 
 # Include directories
-include_directories(include)
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include  # Include the package's header files
+  /workspaces/ros2_jazzy/01_repos/PMBW_Object_Detection_In_Thermal_Images # Include EfficientDet repo
+  ${Python3_INCLUDE_DIRS}  # Include Python headers
+)
 
 # Add the executable
 add_executable(task_planner src/main.cpp src/check_image_data.cpp)
 
 # Specify dependencies for the target
-ament_target_dependencies(task_planner behaviortree_cpp_v3 rclcpp sensor_msgs)
+ament_target_dependencies(task_planner behaviortree_cpp_v3 rclcpp sensor_msgs cv_bridge Python3)
 
 # Install the executable
 install(TARGETS task_planner
