@@ -3,13 +3,29 @@
     <!-- ////////// -->
     <BehaviorTree ID="BehaviorTree">
         <Sequence>
-            <Condition ID="CheckImageData"/>
-            <AlwaysSuccess name="ReactToDetection"/>
+            <ReactiveFallback>
+                <Inverter>
+                    <Condition ID="creatureDetected"/>
+                </Inverter>
+                <Action ID="updateCcpMap" collisionFreePathAvailable="false"/>
+            </ReactiveFallback>
+            <ReactiveSequence>
+                <ReactiveFallback>
+                    <Action ID="generateCcp"/>
+                </ReactiveFallback>
+                <AlwaysSuccess name="Follow the ccp path"/>
+            </ReactiveSequence>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <TreeNodesModel>
-        <Condition ID="CheckImageData"/>
+        <SubTree ID="MySub"/>
+        <Condition ID="checkIfTrue"/>
+        <Condition ID="creatureDetected"/>
+        <Action ID="generateCcp"/>
+        <Action ID="updateCcpMap">
+            <output_port default="false" name="collisionFreePathAvailable"/>
+        </Action>
     </TreeNodesModel>
     <!-- ////////// -->
 </root>
