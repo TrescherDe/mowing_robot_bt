@@ -1,4 +1,4 @@
-#include "check_image_data.hpp"
+#include "creature_detection.hpp"
 
 #include <pybind11/numpy.h>
 
@@ -28,10 +28,9 @@ py::array_t<uint8_t> matToNumpy(const cv::Mat& mat)
     );
 }
 
-CheckImageData::CheckImageData(const std::string &name, const BT::NodeConfiguration &config, const rclcpp::Node::SharedPtr &node)
+CreatureDetection::CreatureDetection(const std::string &name, const BT::NodeConfiguration &config, const rclcpp::Node::SharedPtr &node)
     : BT::ConditionNode(name, config), nh_(node)
 {
-    
     // Initialize Python interpreter
     py::initialize_interpreter();
 
@@ -47,12 +46,12 @@ CheckImageData::CheckImageData(const std::string &name, const BT::NodeConfigurat
         RCLCPP_ERROR(nh_->get_logger(), "Error initializing Python detection module: %s", e.what());
         throw;
     }
-    image_sub_ = nh_->create_subscription<sensor_msgs::msg::Image>("/thermal_image", 1,std::bind(&CheckImageData::imageCallback, this, std::placeholders::_1));
+    image_sub_ = nh_->create_subscription<sensor_msgs::msg::Image>("/thermal_image", 1,std::bind(&CreatureDetection::imageCallback, this, std::placeholders::_1));
     marked_image_pub_ = nh_->create_publisher<sensor_msgs::msg::Image>("/marked_image", 1);
-    camera_info_pub_ = nh_->create_publisher<sensor_msgs::msg::CameraInfo>("/camera_info", 10);
+    camera_info_pub_ = nh_->create_publisher<sensor_msgs::msg::CameraInfo>("/camera_info", 1);
 }
 
-void CheckImageData::publishCameraInfo(const std_msgs::msg::Header &header)
+void CreatureDetection::publishCameraInfo(const std_msgs::msg::Header &header)
 {
     sensor_msgs::msg::CameraInfo camera_info_msg;
     camera_info_msg.header = header; // Use the same header as the image
@@ -70,18 +69,18 @@ void CheckImageData::publishCameraInfo(const std_msgs::msg::Header &header)
     camera_info_pub_->publish(camera_info_msg);
 }
 
-CheckImageData::~CheckImageData()
+CreatureDetection::~CreatureDetection()
 {
     // Finalize Python interpreter
     py::finalize_interpreter();
 }
 
-BT::PortsList CheckImageData::providedPorts()
+BT::PortsList CreatureDetection::providedPorts()
 {
     return {};  // No ports in this example
 }
 
-BT::NodeStatus CheckImageData::tick()
+BT::NodeStatus CreatureDetection::tick()
 {
     if (object_detected_) {
         RCLCPP_INFO(nh_->get_logger(), "Object detected in image.");
@@ -91,12 +90,12 @@ BT::NodeStatus CheckImageData::tick()
     return BT::NodeStatus::FAILURE;
 }
 
-void CheckImageData::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
+void CreatureDetection::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
     object_detected_ = processImage(msg);
 }
 
-bool CheckImageData::processImage(const sensor_msgs::msg::Image::SharedPtr msg)
+bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr msg)
 {  
     cv::Mat cv_image;
     bool hedgehog_detected = false;

@@ -1,5 +1,5 @@
-#ifndef CHECK_IMAGE_DATA_HPP
-#define CHECK_IMAGE_DATA_HPP
+#ifndef CREATURE_DETECTION_HPP
+#define CREATURE_DETECTION_HPP
 
 #include "behaviortree_cpp_v3/condition_node.h"
 #include "rclcpp/rclcpp.hpp"
@@ -17,11 +17,11 @@
 
 namespace py = pybind11;
 
-class CheckImageData : public BT::ConditionNode
+class CreatureDetection : public BT::ConditionNode
 {
 public:
-    CheckImageData(const std::string &name, const BT::NodeConfiguration &config, const rclcpp::Node::SharedPtr &node);
-    ~CheckImageData();
+    CreatureDetection(const std::string &name, const BT::NodeConfiguration &config, const rclcpp::Node::SharedPtr &node);
+    ~CreatureDetection();
 
     static BT::PortsList providedPorts();
     BT::NodeStatus tick() override;
@@ -49,4 +49,4 @@ private:
 
 #pragma GCC visibility pop
 
-#endif // CHECK_IMAGE_DATA_HPP
+#endif // CREATURE_DETECTION_HPP
