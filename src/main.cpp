@@ -1,6 +1,9 @@
 #include "behaviortree_cpp_v3/bt_factory.h"
 #include "rclcpp/rclcpp.hpp"
-#include "check_image_data.hpp"
+#include "creature_detection.hpp"
+#include "complete_coverage_path.hpp"
+#include "update_ccp_map.hpp"
+//#include "check_if_true.hpp"
 #include <chrono>
 #include <thread>
 
@@ -10,30 +13,43 @@ int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
 
-    // Create a shared ROS node
-    auto shared_node = rclcpp::Node::make_shared("task_planner");
+    // Use shared pointers for ROS2 nodes
+    auto main_node = std::make_shared<rclcpp::Node>("task_planner");
+    auto vision_node = std::make_shared<rclcpp::Node>("vision_node");
+    auto navigation_node = std::make_shared<rclcpp::Node>("navigation_node");
 
     // Create a factory and register the custom node
     BT::BehaviorTreeFactory factory;
 
-    // Manually register the CheckImageData node with a custom builder
-    factory.registerBuilder<CheckImageData>("CheckImageData",
-        [&shared_node](const std::string &name, const BT::NodeConfiguration &config) {
-            return std::make_unique<CheckImageData>(name, config, shared_node);
-        });
+    factory.registerBuilder<CreatureDetection>("creatureDetected",
+    [&vision_node](const std::string &name, const BT::NodeConfiguration &config) 
+    {
+        return std::make_unique<CreatureDetection>(name, config, vision_node);
+    });
 
-    // Dynamically find the XML file
-    std::string xml_file = "/workspaces/ros2_jazzy/ros_ws/src/mowing_robot_bt/trees/mowing_robot_bt.xml";
+    factory.registerBuilder<CompleteCoveragePath>("generateCcp",
+    [&navigation_node](const std::string &name, const BT::NodeConfiguration &config) 
+    {
+        return std::make_unique<CompleteCoveragePath>(name, config, navigation_node);
+    });
 
-    RCLCPP_INFO(rclcpp::get_logger("task_planner"), "Loading Behavior Tree from: %s", xml_file.c_str());
+    factory.registerBuilder<UpdateCcpMap>("updateCcpMap",
+    [&navigation_node](const std::string &name, const BT::NodeConfiguration &config) 
+    {
+        return std::make_unique<UpdateCcpMap>(name, config, navigation_node);
+    });
+
+    //factory.registerNodeType<CheckIfTrue>("checkIfTrue");
 
     // Load the Behavior Tree
+    std::string xml_file = "/workspaces/ros2_jazzy/ros_ws/src/mowing_robot_bt/trees/mowing_robot_bt.xml";
+    RCLCPP_INFO(main_node->get_logger(), "Loading Behavior Tree from: %s", xml_file.c_str());
     auto tree = factory.createTreeFromFile(xml_file);
 
     // Add a ZMQ publisher to enable Groot visualization
     BT::PublisherZMQ zmq_publisher(tree);
 
-    RCLCPP_INFO(rclcpp::get_logger("task_planner"), "Starting Behavior Tree execution...");
+    RCLCPP_INFO(main_node->get_logger(), "Starting Behavior Tree execution...");
 
     // Main execution loop
     while (rclcpp::ok())
@@ -41,13 +57,15 @@ int main(int argc, char **argv)
         // Tick the root node of the tree
         BT::NodeStatus status = tree.tickRoot();
 
-        // Optional: Log the status
-        RCLCPP_INFO(shared_node->get_logger(), "Behavior Tree status: %s",
+        // Log the status
+        RCLCPP_INFO(main_node->get_logger(), "Behavior Tree status: %s",
                     (status == BT::NodeStatus::SUCCESS ? "SUCCESS" :
                     (status == BT::NodeStatus::FAILURE ? "FAILURE" : "RUNNING")));
 
-        // Allow ROS to process any callbacks
-        rclcpp::spin_some(shared_node);
+        // Process callbacks for all nodes
+        rclcpp::spin_some(vision_node);
+        rclcpp::spin_some(navigation_node);
+        rclcpp::spin_some(main_node);
 
         // Sleep to simulate periodic ticking
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));

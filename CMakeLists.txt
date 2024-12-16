@@ -16,8 +16,8 @@ include_directories(
   ${Python3_INCLUDE_DIRS}  # Include Python headers
 )
 
-# Add the executable
-add_executable(task_planner src/main.cpp src/check_image_data.cpp)
+# Add the executables
+add_executable(task_planner src/main.cpp src/creature_detection.cpp src/complete_coverage_path.cpp src/update_ccp_map.cpp) #  src/check_if_true.cpp
 
 # Specify dependencies for the target
 ament_target_dependencies(task_planner behaviortree_cpp_v3 rclcpp sensor_msgs cv_bridge Python3)
