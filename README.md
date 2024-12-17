@@ -6,33 +6,35 @@ This repository provides a ROS2-based task planner for an autonomous mowing robo
 
 ### 1. Clone this Repository
 
-First, clone this repository into your ROS2 workspace:
-
-```bash
-git clone <this-repo-url> ~/ros_ws/src/mowing_robot_bt
-```
-
-Replace `<this-repo-url>` with the actual URL of this repository.
+First, clone this repository into your ROS2 workspace
 
 ### 2. Clone and Setup Dependency Repository
 
 Clone the required dependency repository:
 
 ```bash
-git clone <dependency-repo-url> ~/ros_ws/src/dependency_repo
+git clone https://github.com/TrescherDe/PMBW_Object_Detection_In_Thermal_Images
 ```
 
-Follow the setup instructions provided in the dependency repository to ensure proper installation.
+Follow the setup instructions provided in the dependency repository.
 
-### 3. Source the Virtual Environment
+### 3. Clone and Setup the Optris Repository
+
+Clone the required dependency repository:
+
+```bash
+git clone https://github.com/evocortex/optris_drivers2/tree/master
+```
+
+Follow the setup instructions provided in the dependency repository.
+
+### 4. Source the Virtual Environment
 
 Activate the virtual environment created during the dependency setup:
 
 ```bash
 source <path-to-venv>/bin/activate
 ```
-
-Replace `<path-to-venv>` with the correct path to the virtual environment directory.
 
 ### 4. Build the Workspace
 
@@ -56,18 +58,14 @@ ros2 run mowing_robot_bt task_planner
 - **Option 1:** Start your camera using the appropriate command:
 
 ```bash
-<cmd1-to-start-your-camera>
+ros2 run optris_drivers2 optris_imager_node
 ```
-
-Replace `<cmd1-to-start-your-camera>` with the actual command for starting your camera.
 
 - **Option 2:** Send dummy thermal image messages to simulate the camera feed:
 
 ```bash
-ros2 topic pub /thermal_image sensor_msgs/Image "<message-content>" -r 5
+ros2 topic pub /thermal_image sensor_msgs/Image -r 5
 ```
-
-Replace `<message-content>` with the appropriate content for a `sensor_msgs/Image` message.
 
 ## Notes
 - Ensure all dependencies are installed correctly.
