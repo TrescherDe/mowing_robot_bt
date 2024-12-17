@@ -2,29 +2,34 @@
 <root main_tree_to_execute="BehaviorTree">
     <!-- ////////// -->
     <BehaviorTree ID="BehaviorTree">
-        <Sequence>
+        <ReactiveSequence>
             <ReactiveFallback>
                 <Inverter>
                     <Condition ID="creatureDetected"/>
                 </Inverter>
-                <Action ID="updateCcpMap" collisionFreePathAvailable="false"/>
+                <Action ID="updateCcpMap" write_collisionFreePathAvailable="{collisionFreePathAvailable}"/>
             </ReactiveFallback>
             <ReactiveSequence>
-                <ReactiveFallback>
-                    <Action ID="generateCcp"/>
-                </ReactiveFallback>
+                <Action ID="generateCcp" read_collisionFreePathAvailable="{collisionFreePathAvailable}" write_collisionFreePathAvailable="{collisionFreePathAvailable}"/>
                 <AlwaysSuccess name="Follow the ccp path"/>
             </ReactiveSequence>
-        </Sequence>
+        </ReactiveSequence>
     </BehaviorTree>
     <!-- ////////// -->
     <TreeNodesModel>
+        <Action ID="MakeAction">
+            <input_port name="A"/>
+            <input_port name="B"/>
+            <input_port name="C"/>
+        </Action>
         <SubTree ID="MySub"/>
-        <Condition ID="checkIfTrue"/>
         <Condition ID="creatureDetected"/>
-        <Action ID="generateCcp"/>
+        <Action ID="generateCcp">
+            <input_port default="false" name="read_collisionFreePathAvailable"/>
+            <output_port default="false" name="write_collisionFreePathAvailable"/>
+        </Action>
         <Action ID="updateCcpMap">
-            <output_port default="false" name="collisionFreePathAvailable"/>
+            <output_port default="false" name="write_collisionFreePathAvailable"/>
         </Action>
     </TreeNodesModel>
     <!-- ////////// -->

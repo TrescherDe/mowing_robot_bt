@@ -17,7 +17,7 @@ include_directories(
 )
 
 # Add the executables
-add_executable(task_planner src/main.cpp src/creature_detection.cpp src/complete_coverage_path.cpp src/update_ccp_map.cpp) #  src/check_if_true.cpp
+add_executable(task_planner src/main.cpp src/creature_detection.cpp src/complete_coverage_path.cpp src/update_ccp_map.cpp)
 
 # Specify dependencies for the target
 ament_target_dependencies(task_planner behaviortree_cpp_v3 rclcpp sensor_msgs cv_bridge Python3)

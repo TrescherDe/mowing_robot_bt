@@ -8,22 +8,44 @@ CompleteCoveragePath::CompleteCoveragePath(const std::string &name, const BT::No
 
 BT::PortsList CompleteCoveragePath::providedPorts()
 {
-    return {BT::OutputPort<bool>("collisionFreePathAvailable")};
+    return
+    {
+        BT::InputPort<bool>("read_collisionFreePathAvailable"),
+        BT::OutputPort<bool>("write_collisionFreePathAvailable")
+    };
 }
 
 BT::NodeStatus CompleteCoveragePath::tick()
 {
-    RCLCPP_INFO(nh_->get_logger(), "Starting CompleteCoveragePath action...");
+    bool collisionFreePathAvailable = false;
 
-    // Call the dummy function for path generation
-    generateCoveragePath();
+    if (!getInput("read_collisionFreePathAvailable", collisionFreePathAvailable))
+    {
+        RCLCPP_WARN(rclcpp::get_logger("CompleteCoveragePath"), "Input 'read_collisionFreePathAvailable' was not yet set. Defaulting to false.");
+    }
 
-    // Set the blackboard variable ?
-    //config().blackboard->set("collisionFreeCppPathAvailable", true);
-    //RCLCPP_INFO(nh_->get_logger(), "Blackboard: collisionFreeCppPathAvailable set to true");
+    RCLCPP_INFO(rclcpp::get_logger("CompleteCoveragePath"), 
+                "Input value: %s", collisionFreePathAvailable ? "true" : "false");
 
-    // Return SUCCESS
-    return BT::NodeStatus::SUCCESS;
+    if(collisionFreePathAvailable)
+    {
+        return BT::NodeStatus::SUCCESS;
+    }
+    else
+    {
+        RCLCPP_INFO(nh_->get_logger(), "Starting CompleteCoveragePath action...");
+
+        // update this variable in the generateCoveragePath, e.g. success&
+        collisionFreePathAvailable = true;
+
+        // Call the dummy function for path generation
+        generateCoveragePath();
+
+        RCLCPP_INFO(nh_->get_logger(), "Setting collisionFreeCcpPathAvailable to true.");
+        setOutput("write_collisionFreePathAvailable", collisionFreePathAvailable);
+
+        return BT::NodeStatus::SUCCESS;
+    }
 }
 
 // Dummy function for path generation
