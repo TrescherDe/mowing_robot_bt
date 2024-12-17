@@ -122,7 +122,7 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
         if (!paths_loaded)
         {
             RCLCPP_INFO(nh_->get_logger(), "Simulating hedgehog image data");
-            std::string test_images_folder = "/workspaces/ros2_jazzy/ros_ws/src/mowing_robot_bt/test_video/";
+            std::string test_images_folder = "/workspaces/ros2_jazzy/ros_ws/src/mowing_robot_bt/test_video2/";
             for (const auto &entry : fs::directory_iterator(test_images_folder))
             {
                 if (entry.is_regular_file())
