@@ -2,7 +2,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "creature_detection.hpp"
 #include "complete_coverage_path.hpp"
-#include "update_ccp_map.hpp"
+#include "add_obstacle.hpp"
 #include "check_collision_free_ccp_path_available.hpp"
 //#include "check_if_true.hpp"
 #include <chrono>
@@ -34,10 +34,10 @@ int main(int argc, char **argv)
         return std::make_unique<CompleteCoveragePath>(name, config, navigation_node);
     });
 
-    factory.registerBuilder<UpdateCcpMap>("updateCcpMap",
+    factory.registerBuilder<AddObstacle>("addObstacle",
     [&navigation_node](const std::string &name, const BT::NodeConfiguration &config) 
     {
-        return std::make_unique<UpdateCcpMap>(name, config, navigation_node);
+        return std::make_unique<AddObstacle>(name, config, navigation_node);
     });
 
     factory.registerBuilder<CheckCollisionFreeCcpPathAvailable>("checkCollisionFreeCcpPathAvailable",
