@@ -3,6 +3,7 @@
 #include "creature_detection.hpp"
 #include "complete_coverage_path.hpp"
 #include "update_ccp_map.hpp"
+#include "check_collision_free_ccp_path_available.hpp"
 //#include "check_if_true.hpp"
 #include <chrono>
 #include <thread>
@@ -37,6 +38,12 @@ int main(int argc, char **argv)
     [&navigation_node](const std::string &name, const BT::NodeConfiguration &config) 
     {
         return std::make_unique<UpdateCcpMap>(name, config, navigation_node);
+    });
+
+    factory.registerBuilder<CheckCollisionFreeCcpPathAvailable>("checkCollisionFreeCcpPathAvailable",
+    [&navigation_node](const std::string &name, const BT::NodeConfiguration &config) 
+    {
+        return std::make_unique<CheckCollisionFreeCcpPathAvailable>(name, config, navigation_node);
     });
 
     //factory.registerNodeType<CheckIfTrue>("checkIfTrue");
