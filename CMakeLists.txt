@@ -8,6 +8,7 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)  # Add cv_bridge
 find_package(Python3 COMPONENTS Development REQUIRED)
+find_package(std_srvs REQUIRED)
 
 # Include directories
 include_directories(
@@ -17,10 +18,10 @@ include_directories(
 )
 
 # Add the executables
-add_executable(task_planner src/main.cpp src/creature_detection.cpp src/complete_coverage_path.cpp src/update_ccp_map.cpp)
+add_executable(task_planner src/main.cpp src/creature_detection.cpp src/complete_coverage_path.cpp src/update_ccp_map.cpp src/check_collision_free_ccp_path_available.cpp)
 
 # Specify dependencies for the target
-ament_target_dependencies(task_planner behaviortree_cpp_v3 rclcpp sensor_msgs cv_bridge Python3)
+ament_target_dependencies(task_planner behaviortree_cpp_v3 rclcpp sensor_msgs cv_bridge Python3 std_srvs)
 
 # Install the executable
 install(TARGETS task_planner

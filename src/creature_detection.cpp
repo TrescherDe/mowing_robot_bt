@@ -77,7 +77,7 @@ CreatureDetection::~CreatureDetection()
 
 BT::PortsList CreatureDetection::providedPorts()
 {
-    return {};  // No ports in this example
+    return {};
 }
 
 BT::NodeStatus CreatureDetection::tick()

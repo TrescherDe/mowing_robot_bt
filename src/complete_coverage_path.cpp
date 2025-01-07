@@ -2,55 +2,53 @@
 
 CompleteCoveragePath::CompleteCoveragePath(const std::string &name, const BT::NodeConfiguration &config, const rclcpp::Node::SharedPtr &node)
     : BT::SyncActionNode(name, config), nh_(node)
-{
+{    
+    set_collision_free_service_ = nh_->create_service<std_srvs::srv::SetBool>("set_collision_free_path",
+        std::bind(&CompleteCoveragePath::handleSetCollisionFreePath, this, std::placeholders::_1, std::placeholders::_2));
+
+    get_collision_free_service_ = nh_->create_service<std_srvs::srv::Trigger>("get_collision_free_path",
+        std::bind(&CompleteCoveragePath::handleGetCollisionFreePath, this, std::placeholders::_1, std::placeholders::_2));
+
     RCLCPP_INFO(nh_->get_logger(), "CompleteCoveragePath action node initialized.");
 }
 
 BT::PortsList CompleteCoveragePath::providedPorts()
 {
-    return
-    {
-        BT::InputPort<bool>("read_collisionFreePathAvailable"),
-        BT::OutputPort<bool>("write_collisionFreePathAvailable")
-    };
+    return {};
 }
 
 BT::NodeStatus CompleteCoveragePath::tick()
 {
-    bool collisionFreePathAvailable = false;
-
-    if (!getInput("read_collisionFreePathAvailable", collisionFreePathAvailable))
-    {
-        RCLCPP_WARN(rclcpp::get_logger("CompleteCoveragePath"), "Input 'read_collisionFreePathAvailable' was not yet set. Defaulting to false.");
-    }
-
-    RCLCPP_INFO(rclcpp::get_logger("CompleteCoveragePath"), 
-                "Input value: %s", collisionFreePathAvailable ? "true" : "false");
-
-    if(collisionFreePathAvailable)
-    {
-        return BT::NodeStatus::SUCCESS;
-    }
-    else
-    {
-        RCLCPP_INFO(nh_->get_logger(), "Starting CompleteCoveragePath action...");
-
-        // update this variable in the generateCoveragePath, e.g. success&
-        collisionFreePathAvailable = true;
-
-        // Call the dummy function for path generation
-        generateCoveragePath();
-
-        RCLCPP_INFO(nh_->get_logger(), "Setting collisionFreeCcpPathAvailable to true.");
-        setOutput("write_collisionFreePathAvailable", collisionFreePathAvailable);
-
-        return BT::NodeStatus::SUCCESS;
-    }
+    RCLCPP_INFO(nh_->get_logger(), "Generating complete coverage path...");
+    generateCoveragePath();
+    return BT::NodeStatus::SUCCESS;
 }
 
 // Dummy function for path generation
 void CompleteCoveragePath::generateCoveragePath()
 {
     RCLCPP_INFO(nh_->get_logger(), "Generating the complete coverage path here...");
+    collisionFreeCcpPathAvailable_ = true;
     // TODO: Replace this with actual path planning logic
+}
+
+void CompleteCoveragePath::handleSetCollisionFreePath(
+    const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
+    std::shared_ptr<std_srvs::srv::SetBool::Response> response)
+{
+    collisionFreeCcpPathAvailable_ = request->data;
+    response->success = true;
+    response->message = collisionFreeCcpPathAvailable_ ? "Path is collision-free" : "Path is not collision-free";
+    RCLCPP_INFO(nh_->get_logger(), "Collision-free path set to: %s",
+                collisionFreeCcpPathAvailable_ ? "true" : "false");
+}
+
+void CompleteCoveragePath::handleGetCollisionFreePath(
+    const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+{
+    response->success = true;
+    response->message = collisionFreeCcpPathAvailable_ ? "Path is collision-free" : "Path is not collision-free";
+    RCLCPP_INFO(nh_->get_logger(), "Collision-free path status: %s",
+                collisionFreeCcpPathAvailable_ ? "true" : "false");
 }

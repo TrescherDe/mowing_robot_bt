@@ -7,13 +7,10 @@
                 <Inverter>
                     <Condition ID="creatureDetected"/>
                 </Inverter>
-                <Action ID="updateCcpMap"/>
+                <Action ID="updateCcpMap" write_collisionFreePathAvailable="{collisionFreePathAvailable}"/>
             </ReactiveFallback>
             <ReactiveSequence>
-                <ReactiveFallback>
-                    <Condition ID="checkCollisionFreeCcpPathAvailable"/>
-                    <Action ID="generateCcp"/>
-                </ReactiveFallback>
+                <Action ID="generateCcp" read_collisionFreePathAvailable="{collisionFreePathAvailable}" write_collisionFreePathAvailable="{collisionFreePathAvailable}"/>
                 <AlwaysSuccess name="Follow the ccp path"/>
             </ReactiveSequence>
         </ReactiveSequence>
@@ -26,10 +23,14 @@
             <input_port name="C"/>
         </Action>
         <SubTree ID="MySub"/>
-        <Condition ID="checkCollisionFreeCcpPathAvailable"/>
         <Condition ID="creatureDetected"/>
-        <Action ID="generateCcp"/>
-        <Action ID="updateCcpMap"/>
+        <Action ID="generateCcp">
+            <input_port default="false" name="read_collisionFreePathAvailable"/>
+            <output_port default="false" name="write_collisionFreePathAvailable"/>
+        </Action>
+        <Action ID="updateCcpMap">
+            <output_port default="false" name="write_collisionFreePathAvailable"/>
+        </Action>
     </TreeNodesModel>
     <!-- ////////// -->
 </root>
