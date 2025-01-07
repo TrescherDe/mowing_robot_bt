@@ -7,7 +7,7 @@
                 <Inverter>
                     <Condition ID="creatureDetected"/>
                 </Inverter>
-                <Action ID="updateCcpMap"/>
+                <Action ID="addObstacle" x="0.0" y="0.0" z="0.0"/>
             </ReactiveFallback>
             <ReactiveSequence>
                 <ReactiveFallback>
@@ -26,10 +26,14 @@
             <input_port name="C"/>
         </Action>
         <SubTree ID="MySub"/>
+        <Action ID="addObstacle">
+            <input_port default="0.0" name="x"/>
+            <input_port default="0.0" name="y"/>
+            <input_port default="0.0" name="z"/>
+        </Action>
         <Condition ID="checkCollisionFreeCcpPathAvailable"/>
         <Condition ID="creatureDetected"/>
         <Action ID="generateCcp"/>
-        <Action ID="updateCcpMap"/>
     </TreeNodesModel>
     <!-- ////////// -->
 </root>
