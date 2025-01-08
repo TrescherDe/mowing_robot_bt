@@ -1,8 +1,10 @@
 #include "add_obstacle.hpp"
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 
+//TODO:
+// if obstacle is too close -> publishing #475: nav2_msgs.msg.SpeedLimit(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), percentage=False, speed_limit=0.05)
 AddObstacle::AddObstacle(const std::string &name, const BT::NodeConfiguration &config, const rclcpp::Node::SharedPtr &node)
-    : BT::SyncActionNode(name, config), nh_(node), obstacle_timeout_(5.0),
+    : BT::SyncActionNode(name, config), nh_(node), obstacle_timeout_(60.0),
       tf_buffer_(std::make_shared<tf2_ros::Buffer>(nh_->get_clock())),
       tf_listener_(*tf_buffer_)
 {
@@ -106,7 +108,7 @@ BT::NodeStatus AddObstacle::tick()
     double roll, pitch, yaw;
     tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
 
-    float offset = 0.5; // Distance in front of the robot
+    float offset = 0.8; // Distance in front of the robot
     float obstacle_x = robot_x + offset * std::cos(yaw);
     float obstacle_y = robot_y + offset * std::sin(yaw);
     float obstacle_z = 0.0; // Assume ground level
