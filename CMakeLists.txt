@@ -31,8 +31,8 @@ install(TARGETS task_planner
   DESTINATION lib/${PROJECT_NAME})
 
 # Install the launch directory
-install(DIRECTORY launch/
-  DESTINATION share/${PROJECT_NAME}/launch)
+#install(DIRECTORY launch/
+#  DESTINATION share/${PROJECT_NAME}/launch)
 
 # Install XML files for Behavior Trees
 install(DIRECTORY trees
