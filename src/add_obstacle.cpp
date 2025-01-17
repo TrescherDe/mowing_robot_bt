@@ -10,7 +10,7 @@ AddObstacle::AddObstacle(const std::string &name, const BT::NodeConfiguration &c
 {
     // Initialize the service client
     set_collision_free_client_ = nh_->create_client<std_srvs::srv::SetBool>("set_collision_free_path");
-    obstacle_publisher_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("/eduard/fred/detected_obstacles", 1);
+    obstacle_publisher_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("/detected_obstacles", 1);
 
     RCLCPP_INFO(nh_->get_logger(), "AddObstacle: Service client for 'set_collision_free_path' initialized.");
 }
