@@ -45,16 +45,45 @@ cd ~/ros_ws
 colcon build
 ```
 
-### 5. Run the Task Planner
+### 5. Install nav2
 
-Launch the task planner node for the mowing robot:
+Follow the official Nav2 installation guide: [Getting Started with Nav2](https://docs.nav2.org/getting_started/index.html)
+
+### 6. Start the Simulation Based on Nav2
+
+Launch the simulation:
+
+```bash
+ros2 launch mowing_robot_bt tb3_simulation_launch.py
+```
+
+![Simulation Launch](docs/tb3_simulation1.png)
+
+Perform a 2D Pose Estimation, and you should see the laserscan data and the costmap:
+![Laserscan and Costmap](docs/tb3_simulation2.png)
+
+
+Next, follow these steps:
+1. Click on **"Startup"**.
+2. Select **"Waypoint / Nav Through Poses Mode"**.
+3. Click on **"Load WPs"** to load waypoints.
+
+You should see the following screen:
+
+![Waypoint Loading](docs/tb3_simulation3.png)
+
+Finally, click on **"Start Nav Through Poses"** to begin navigation.
+
+### 7. Run the Task Planner
+
+Run the task planner node for the mowing robot:
 
 ```bash
 ros2 run mowing_robot_bt task_planner
 ```
 
-### 6. Start Your Camera or Send Dummy Messages
-
+### 8. Start Your Camera or Send Dummy Messages
+   
 - **Option 1:** Start your camera using the appropriate command:
 
 ```bash
@@ -64,8 +93,20 @@ ros2 run optris_drivers2 optris_imager_node
 - **Option 2:** Send dummy thermal image messages to simulate the camera feed:
 
 ```bash
-ros2 topic pub /thermal_image sensor_msgs/Image -r 5
+ros2 topic pub /thermal_image sensor_msgs/Image -r 0.1
 ```
+
+### 9. Object Detection and Path Replanning
+
+If an object is detected, a point will be published in the simulation, and the planner will replan around it.
+
+The detected point is published and displayed on the map:
+
+![Detected Object](docs/tb3_simulation4.png)
+
+The replanned path is shown as follows:
+
+![Replanned Path](docs/tb3_simulation5.png)
 
 ## Notes
 - Ensure all dependencies are installed correctly.
