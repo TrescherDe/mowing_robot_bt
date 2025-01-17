@@ -10,7 +10,7 @@ AddObstacle::AddObstacle(const std::string &name, const BT::NodeConfiguration &c
 {
     // Initialize the service client
     set_collision_free_client_ = nh_->create_client<std_srvs::srv::SetBool>("set_collision_free_path");
-    obstacle_publisher_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("/dynamic_obstacles", 1);
+    obstacle_publisher_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("/eduard/fred/detected_obstacles", 1);
 
     RCLCPP_INFO(nh_->get_logger(), "AddObstacle: Service client for 'set_collision_free_path' initialized.");
 }
@@ -37,7 +37,7 @@ void AddObstacle::publishObstacles()
     removeStaleObstacles();
 
     sensor_msgs::msg::PointCloud2 cloud_msg;
-    cloud_msg.header.frame_id = "map";
+    cloud_msg.header.frame_id = "eduard/fred/map";
     cloud_msg.header.stamp = nh_->get_clock()->now();
     cloud_msg.height = 1;
     cloud_msg.width = dynamic_obstacles_.size();
@@ -80,7 +80,7 @@ BT::NodeStatus AddObstacle::tick()
     geometry_msgs::msg::TransformStamped transform;
     try
     {
-        transform = tf_buffer_->lookupTransform("map", "base_link", rclcpp::Time(0), std::chrono::seconds(2));
+        transform = tf_buffer_->lookupTransform("eduard/fred/map", "eduard/fred/base_link", rclcpp::Time(0), std::chrono::seconds(2));
     }
     catch (const tf2::TransformException &ex)
     {
@@ -111,7 +111,7 @@ BT::NodeStatus AddObstacle::tick()
     float offset = 0.8; // Distance in front of the robot
     float obstacle_x = robot_x + offset * std::cos(yaw);
     float obstacle_y = robot_y + offset * std::sin(yaw);
-    float obstacle_z = 0.0; // Assume ground level
+    float obstacle_z = 0.57; // Assume ground level
 
     addObstacle(obstacle_x, obstacle_y, obstacle_z);
     publishObstacles();
