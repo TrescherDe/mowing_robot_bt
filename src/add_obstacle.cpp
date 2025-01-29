@@ -12,13 +12,95 @@ AddObstacle::AddObstacle(const std::string &name, const BT::NodeConfiguration &c
     set_collision_free_client_ = nh_->create_client<std_srvs::srv::SetBool>("set_collision_free_path");
     obstacle_publisher_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("/eduard/fred/detected_obstacles", 1);
 
+    // Load Homography matrix (example, adjust with the real values)
+    homography_matrix_ = cv::Mat::eye(3, 3, CV_64F);
+    homography_matrix_.at<double>(0, 0) = 1.2;
+    homography_matrix_.at<double>(0, 1) = 0.0;
+    homography_matrix_.at<double>(0, 2) = -200;
+    homography_matrix_.at<double>(1, 0) = 0.0;
+    homography_matrix_.at<double>(1, 1) = 1.5;
+    homography_matrix_.at<double>(1, 2) = -100;
+    homography_matrix_.at<double>(2, 0) = 0.0;
+    homography_matrix_.at<double>(2, 1) = 0.0;
+    homography_matrix_.at<double>(2, 2) = 1.0;
+
     RCLCPP_INFO(nh_->get_logger(), "AddObstacle: Service client for 'set_collision_free_path' initialized.");
 }
 
 
-void AddObstacle::addObstacle(float x, float y, float z)
+void AddObstacle::addObstacle(const geometry_msgs::msg::Point &map_point)
 {
-    dynamic_obstacles_.emplace_back(std::array<float, 3>{x, y, z}, nh_->get_clock()->now());
+    // Store the obstacle as a map point
+    dynamic_obstacles_.emplace_back(map_point, nh_->get_clock()->now());
+}
+
+// Function to calculate the world point using IPM
+geometry_msgs::msg::Point AddObstacle::calculatePointWithIPM(int x_min, int y_min, int x_max, int y_max, const cv::Mat &homography_matrix)
+{
+    // Calculate the center of the bounding box
+    double x_center = (x_min + x_max) / 2.0;
+    double y_center = (y_min + y_max) / 2.0;
+
+    // Apply the homography transformation
+    cv::Mat point_image = (cv::Mat_<double>(3, 1) << x_center, y_center, 1.0);
+    cv::Mat point_world = homography_matrix * point_image;
+
+    // Normalize the resulting point
+    double x_world = point_world.at<double>(0, 0) / point_world.at<double>(2, 0);
+    double y_world = point_world.at<double>(1, 0) / point_world.at<double>(2, 0);
+
+    // Create and return the Point message
+    geometry_msgs::msg::Point world_point;
+    world_point.x = x_world;
+    world_point.y = y_world;
+    world_point.z = 0.0; // Assuming the ground plane
+
+    return world_point;
+}
+
+geometry_msgs::msg::Point AddObstacle::transformPointToMapFrame(const geometry_msgs::msg::Point &world_point, const geometry_msgs::msg::Transform &robot_transform) 
+{
+    // Extract robot position and orientation
+    double robot_x = robot_transform.translation.x;
+    double robot_y = robot_transform.translation.y;
+    double robot_z = robot_transform.translation.z;
+
+    // Extract yaw from quaternion
+    tf2::Quaternion q(
+        robot_transform.rotation.x,
+        robot_transform.rotation.y,
+        robot_transform.rotation.z,
+        robot_transform.rotation.w);
+
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+    // Transform the world point to the map frame
+    geometry_msgs::msg::Point map_point;
+    map_point.x = robot_x + (std::cos(yaw) * world_point.x - std::sin(yaw) * world_point.y);
+    map_point.y = robot_y + (std::sin(yaw) * world_point.x + std::cos(yaw) * world_point.y);
+    map_point.z = robot_z + world_point.z; // Assuming Z remains the same
+
+    return map_point;
+}
+
+geometry_msgs::msg::Transform AddObstacle::getRobotTransform() 
+{
+    geometry_msgs::msg::Transform transform;
+    try
+    {        
+        geometry_msgs::msg::TransformStamped transform_stamped = 
+            tf_buffer_->lookupTransform("eduard/fred/map", "eduard/fred/base_link", rclcpp::Time(0), std::chrono::seconds(2));
+
+        // Extract the transform
+        transform = transform_stamped.transform;
+    } 
+    catch (const tf2::TransformException &ex)
+    {
+        RCLCPP_ERROR(nh_->get_logger(), "Failed to get transform: %s", ex.what());
+    }
+
+    return transform;
 }
 
 void AddObstacle::removeStaleObstacles()
@@ -62,61 +144,45 @@ void AddObstacle::publishObstacles()
     cloud_msg.fields[2].datatype = sensor_msgs::msg::PointField::FLOAT32;
     cloud_msg.fields[2].count = 1;
 
+    // Prepare the PointCloud2 data buffer
     std::vector<uint8_t> data(cloud_msg.point_step * dynamic_obstacles_.size());
     for (size_t i = 0; i < dynamic_obstacles_.size(); ++i) {
-        *reinterpret_cast<float *>(&data[i * 12 + 0]) = dynamic_obstacles_[i].first[0];
-        *reinterpret_cast<float *>(&data[i * 12 + 4]) = dynamic_obstacles_[i].first[1];
-        *reinterpret_cast<float *>(&data[i * 12 + 8]) = dynamic_obstacles_[i].first[2];
+        const auto &map_point = dynamic_obstacles_[i].first;  // geometry_msgs::msg::Point
+
+        *reinterpret_cast<float *>(&data[i * 12 + 0]) = static_cast<float>(map_point.x);
+        *reinterpret_cast<float *>(&data[i * 12 + 4]) = static_cast<float>(map_point.y);
+        *reinterpret_cast<float *>(&data[i * 12 + 8]) = static_cast<float>(map_point.z);
     }
+
     cloud_msg.data = data;
 
+    // Publish the PointCloud2 message
     obstacle_publisher_->publish(cloud_msg);
 }
+
 
 BT::NodeStatus AddObstacle::tick()
 {
     RCLCPP_INFO(nh_->get_logger(), "AddObstacle: Adding obstacle dynamically in front of the robot...");
 
-    geometry_msgs::msg::TransformStamped transform;
-    try
-    {
-        transform = tf_buffer_->lookupTransform("eduard/fred/map", "eduard/fred/base_link", rclcpp::Time(0), std::chrono::seconds(2));
-    }
-    catch (const tf2::TransformException &ex)
-    {
-        RCLCPP_ERROR(nh_->get_logger(), "Failed to get transform: %s", ex.what());
-        return BT::NodeStatus::FAILURE;
-    }
+    geometry_msgs::msg::Transform robot_transform = getRobotTransform();
 
-    
-    float x, y, z = 0.0;  // Default z to 0.0
-    // need logic to use these coordinates
-    if (!getInput("x", x) || !getInput("y", y)) {
-        RCLCPP_ERROR(nh_->get_logger(), "Missing required inputs [x, y]");
-        return BT::NodeStatus::FAILURE;
-    }
+    //float x, y, z = 0.0;  // Default z to 0.0
+    int x_min = 100, y_min = 200, x_max = 300, y_max = 400;
 
-    float robot_x = transform.transform.translation.x;
-    float robot_y = transform.transform.translation.y;
+    // Transform bounding box center to world point
+    geometry_msgs::msg::Point world_point = calculatePointWithIPM(x_min, y_min, x_max, y_max, homography_matrix_);
+    // Transform the Point to the Map
+    geometry_msgs::msg::Point map_point = transformPointToMapFrame(world_point, robot_transform);
+    map_point.x = 0.5;
+    map_point.y = 0.5;
+    map_point.z = 0.57;
+    addObstacle(map_point);
+   
+    RCLCPP_INFO(nh_->get_logger(), "Robot position at map coordinates: x=%f, y=%f, z=%f", robot_transform.translation.x, robot_transform.translation.y, robot_transform.translation.z);
+    RCLCPP_INFO(nh_->get_logger(), "Added obstacle at map coordinates: x=%f, y=%f, z=%f", map_point.x, map_point.y, map_point.z);
 
-    tf2::Quaternion q(
-        transform.transform.rotation.x,
-        transform.transform.rotation.y,
-        transform.transform.rotation.z,
-        transform.transform.rotation.w);
-
-    double roll, pitch, yaw;
-    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-
-    float offset = 0.8; // Distance in front of the robot
-    float obstacle_x = robot_x + offset * std::cos(yaw);
-    float obstacle_y = robot_y + offset * std::sin(yaw);
-    float obstacle_z = 0.57; // Assume ground level
-
-    addObstacle(obstacle_x, obstacle_y, obstacle_z);
     publishObstacles();
-
-    RCLCPP_INFO(nh_->get_logger(), "Added obstacle at (%.2f, %.2f, %.2f) and published all dynamic obstacles.", obstacle_x, obstacle_y, obstacle_z);
 
     return BT::NodeStatus::SUCCESS;
 

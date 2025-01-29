@@ -15,21 +15,25 @@
 #include <array>
 #include <chrono>
 
+// Inverse Perspective Mapping
+#include <opencv2/opencv.hpp>
+#include <cv_bridge/cv_bridge.hpp>
+#include <geometry_msgs/msg/point.hpp>
+
 class AddObstacle : public BT::SyncActionNode
 {
 public:
     AddObstacle(const std::string &name, const BT::NodeConfiguration &config, const rclcpp::Node::SharedPtr &node);
-    void addObstacle(float x, float y, float z);
+    geometry_msgs::msg::Point calculatePointWithIPM(int x_min, int y_min, int x_max, int y_max, const cv::Mat &homography_matrix);
+    geometry_msgs::msg::Point transformPointToMapFrame(const geometry_msgs::msg::Point &world_point, const geometry_msgs::msg::Transform &robot_transform);
+    geometry_msgs::msg::Transform getRobotTransform();
+    void addObstacle(const geometry_msgs::msg::Point &map_point);
     void removeStaleObstacles();
     void publishObstacles();
 
     static BT::PortsList providedPorts()
     {
-        return {
-            BT::InputPort<float>("x"),
-            BT::InputPort<float>("y"),
-            BT::InputPort<float>("z")
-        };
+        return {};
     }
 
     BT::NodeStatus tick() override;
@@ -42,9 +46,9 @@ private:
     std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
     
-    std::vector<std::pair<std::array<float, 3>, rclcpp::Time>> dynamic_obstacles_;  // Buffer for obstacles with timestamps
+    std::vector<std::pair<geometry_msgs::msg::Point, rclcpp::Time>> dynamic_obstacles_;
     double obstacle_timeout_;  // Timeout duration for stale obstacles (in seconds)
-    
+    cv::Mat homography_matrix_; // Homography matrix of the camera    
 };
 
 #endif // ADD_OBSTACLE_HPP
