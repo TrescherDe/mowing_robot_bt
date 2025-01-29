@@ -83,7 +83,8 @@ BT::PortsList CreatureDetection::providedPorts()
 
 BT::NodeStatus CreatureDetection::tick()
 {
-    if (object_detected_) {
+    if (object_detected_)
+    {
         RCLCPP_INFO(nh_->get_logger(), "Object detected in image.");
         return BT::NodeStatus::SUCCESS;
     }
@@ -117,7 +118,7 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
             return false;
         }
     }
-     else if (simulation)
+    else if (simulation)
     {
         // Load image paths only once
         if (!paths_loaded)
@@ -196,7 +197,8 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
         {
             py::dict detection = item.cast<py::dict>();
 
-            if (detection["rois"].cast<py::array_t<float>>().size() == 0) {
+            if (detection["rois"].cast<py::array_t<float>>().size() == 0)
+            {
                 RCLCPP_WARN(nh_->get_logger(), "Empty detection result.");
                 continue;
             }
@@ -206,14 +208,16 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
             auto rois_info = rois_array.request(); // Get buffer info
 
             // Validate the shape of the ROIs array
-            if (rois_info.shape.size() != 2 || rois_info.shape[1] != 4) {
+            if (rois_info.shape.size() != 2 || rois_info.shape[1] != 4)
+            {
                 RCLCPP_ERROR(nh_->get_logger(), "ROIs shape invalid: [%ld, %ld]", rois_info.shape[0], rois_info.shape[1]);
                 return false;
             }            
             
             // Iterate over each bounding box
             float* rois_ptr = static_cast<float*>(rois_info.ptr);
-            for (size_t i = 0; i < rois_info.shape[0]; ++i) {
+            for (size_t i = 0; i < rois_info.shape[0]; ++i)
+            {
                 // Extract each bounding box
                 std::vector<float> bbox(rois_ptr + i * 4, rois_ptr + (i + 1) * 4);
 
@@ -259,8 +263,7 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
                 if(class_id == 0)
                 {
                     label = "Hedgehog: " + std::to_string(score);
-                    hedgehog_detected = true;
-                    
+                    hedgehog_detected = true;                    
                 }
                 else
                 {
@@ -305,8 +308,7 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
         marked_image_pub_->publish(*marked_msg);
 
         // Publish the detections
-        bbox_pub_->publish(bboxes);
-        
+        bbox_pub_->publish(bboxes);        
 
         return hedgehog_detected;
     }

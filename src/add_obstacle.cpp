@@ -9,7 +9,8 @@ AddObstacle::AddObstacle(const std::string &name, const BT::NodeConfiguration &c
       tf_listener_(*tf_buffer_)
 {
     obstacle_publisher_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("/eduard/fred/detected_obstacles", 1);
-
+    bbox_sub_ = nh_->create_subscription<vision_msgs::msg::Detection2DArray>("/detected_creature/bboxes", 1, std::bind(&AddObstacle::bboxCallback, this, std::placeholders::_1));
+   
     // Load Homography matrix (example, adjust with the real values)
     homography_matrix_ = cv::Mat::eye(3, 3, CV_64F);
     homography_matrix_.at<double>(0, 0) = 1.2;
@@ -25,20 +26,61 @@ AddObstacle::AddObstacle(const std::string &name, const BT::NodeConfiguration &c
     RCLCPP_INFO(nh_->get_logger(), "AddObstacle node initialized.");
 }
 
-
-void AddObstacle::addObstacle(const geometry_msgs::msg::Point &map_point)
+void AddObstacle::bboxCallback(const vision_msgs::msg::Detection2DArray::SharedPtr msg)
 {
-    // Store the obstacle as a map point
-    dynamic_obstacles_.emplace_back(map_point, nh_->get_clock()->now());
+    RCLCPP_INFO(nh_->get_logger(), "Received %ld bounding boxes", msg->detections.size());
+    added_creature_as_obstacle_ = addObstacle(msg);
+}
+
+bool AddObstacle::addObstacle(const vision_msgs::msg::Detection2DArray::SharedPtr msg)
+{
+    RCLCPP_INFO(nh_->get_logger(), "AddObstacle: Adding obstacle dynamically in front of the robot...");
+
+    geometry_msgs::msg::Transform robot_transform = getRobotTransform();
+
+    for (const auto& detection : msg->detections)
+    {
+        double x_center = detection.bbox.center.position.x;
+        double y_center = detection.bbox.center.position.y;
+
+        if(m_debug)
+        {
+            RCLCPP_INFO(nh_->get_logger(), "BBox: Center (%f, %f), Size (%f x %f)",
+                    detection.bbox.center.position.x, detection.bbox.center.position.y,
+                    detection.bbox.size_x, detection.bbox.size_y);
+        
+            if (!detection.results.empty())
+            {
+                RCLCPP_INFO(nh_->get_logger(), "Class ID: %s, Confidence: %.2f",
+                            detection.results[0].hypothesis.class_id.c_str(),
+                            detection.results[0].hypothesis.score);
+            }
+        }
+        
+        // Transform bounding box center to world point   ,
+        geometry_msgs::msg::Point world_point = calculatePointWithIPM(x_center, y_center, homography_matrix_);
+
+        // Transform the Point to the Map
+        geometry_msgs::msg::Point map_point = transformPointToMapFrame(world_point, robot_transform);
+
+        // Store the obstacles
+        dynamic_obstacles_.emplace_back(map_point, nh_->get_clock()->now());
+
+        if(m_debug)
+        {
+            RCLCPP_INFO(nh_->get_logger(), "Robot position at map coordinates: x=%f, y=%f, z=%f", robot_transform.translation.x, robot_transform.translation.y, robot_transform.translation.z);
+            RCLCPP_INFO(nh_->get_logger(), "Added obstacle at map coordinates: x=%f, y=%f, z=%f", map_point.x, map_point.y, map_point.z);
+        }
+    }    
+
+    publishObstacles();
+    added_creature_as_obstacle_ = true;
+    return true;
 }
 
 // Function to calculate the world point using IPM
-geometry_msgs::msg::Point AddObstacle::calculatePointWithIPM(int x_min, int y_min, int x_max, int y_max, const cv::Mat &homography_matrix)
+geometry_msgs::msg::Point AddObstacle::calculatePointWithIPM(const double& x_center, const double& y_center, const cv::Mat &homography_matrix)
 {
-    // Calculate the center of the bounding box
-    double x_center = (x_min + x_max) / 2.0;
-    double y_center = (y_min + y_max) / 2.0;
-
     // Apply the homography transformation
     cv::Mat point_image = (cv::Mat_<double>(3, 1) << x_center, y_center, 1.0);
     cv::Mat point_world = homography_matrix * point_image;
@@ -158,29 +200,13 @@ void AddObstacle::publishObstacles()
     obstacle_publisher_->publish(cloud_msg);
 }
 
-
 BT::NodeStatus AddObstacle::tick()
 {
-    RCLCPP_INFO(nh_->get_logger(), "AddObstacle: Adding obstacle dynamically in front of the robot...");
-
-    geometry_msgs::msg::Transform robot_transform = getRobotTransform();
-
-    //float x, y, z = 0.0;  // Default z to 0.0
-    int x_min = 100, y_min = 200, x_max = 300, y_max = 400;
-
-    // Transform bounding box center to world point
-    geometry_msgs::msg::Point world_point = calculatePointWithIPM(x_min, y_min, x_max, y_max, homography_matrix_);
-    // Transform the Point to the Map
-    geometry_msgs::msg::Point map_point = transformPointToMapFrame(world_point, robot_transform);
-    map_point.x = 0.5;
-    map_point.y = 0.5;
-    map_point.z = 0.57;
-    addObstacle(map_point);
-   
-    RCLCPP_INFO(nh_->get_logger(), "Robot position at map coordinates: x=%f, y=%f, z=%f", robot_transform.translation.x, robot_transform.translation.y, robot_transform.translation.z);
-    RCLCPP_INFO(nh_->get_logger(), "Added obstacle at map coordinates: x=%f, y=%f, z=%f", map_point.x, map_point.y, map_point.z);
-
-    publishObstacles();
-
-    return BT::NodeStatus::SUCCESS;
+    if (added_creature_as_obstacle_)
+    {
+        RCLCPP_INFO(nh_->get_logger(), "Creature was added as an obstacle.");
+        return BT::NodeStatus::SUCCESS;
+    }
+    RCLCPP_INFO(nh_->get_logger(), "No creature found to add as an obstacle.");
+    return BT::NodeStatus::FAILURE;
 }
