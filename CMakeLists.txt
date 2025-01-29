@@ -9,7 +9,6 @@ find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Python3 COMPONENTS Development REQUIRED)
-find_package(std_srvs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
@@ -24,10 +23,10 @@ include_directories(
 )
 
 # Add the executables
-add_executable(task_planner src/main.cpp src/creature_detection.cpp src/complete_coverage_path.cpp src/add_obstacle.cpp src/check_collision_free_ccp_path_available.cpp)
+add_executable(task_planner src/main.cpp src/creature_detection.cpp src/add_obstacle.cpp)
 
 # Specify dependencies for the target
-ament_target_dependencies(task_planner behaviortree_cpp_v3 rclcpp sensor_msgs cv_bridge Python3 std_srvs tf2 tf2_ros tf2_geometry_msgs OpenCV geometry_msgs vision_msgs)
+ament_target_dependencies(task_planner behaviortree_cpp_v3 rclcpp sensor_msgs cv_bridge Python3 tf2 tf2_ros tf2_geometry_msgs OpenCV geometry_msgs vision_msgs)
 
 # Install the executable
 install(TARGETS task_planner

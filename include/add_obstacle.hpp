@@ -4,7 +4,6 @@
 #include "behaviortree_cpp_v3/action_node.h"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
-#include "std_srvs/srv/set_bool.hpp"
 
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
@@ -41,7 +40,6 @@ public:
 private:
     rclcpp::Node::SharedPtr nh_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr obstacle_publisher_;
-    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr set_collision_free_client_; // Service client
 
     std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
     tf2_ros::TransformListener tf_listener_;

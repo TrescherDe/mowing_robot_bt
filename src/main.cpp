@@ -1,14 +1,11 @@
 #include "behaviortree_cpp_v3/bt_factory.h"
 #include "rclcpp/rclcpp.hpp"
 #include "creature_detection.hpp"
-#include "complete_coverage_path.hpp"
 #include "add_obstacle.hpp"
-#include "check_collision_free_ccp_path_available.hpp"
-//#include "check_if_true.hpp"
+#include "behaviortree_cpp_v3/loggers/bt_zmq_publisher.h"
+
 #include <chrono>
 #include <thread>
-
-#include "behaviortree_cpp_v3/loggers/bt_zmq_publisher.h"
 
 int main(int argc, char **argv)
 {
@@ -28,28 +25,15 @@ int main(int argc, char **argv)
         return std::make_unique<CreatureDetection>(name, config, vision_node);
     });
 
-    factory.registerBuilder<CompleteCoveragePath>("generateCcp",
-    [&navigation_node](const std::string &name, const BT::NodeConfiguration &config) 
-    {
-        return std::make_unique<CompleteCoveragePath>(name, config, navigation_node);
-    });
-
     factory.registerBuilder<AddObstacle>("addObstacle",
     [&navigation_node](const std::string &name, const BT::NodeConfiguration &config) 
     {
         return std::make_unique<AddObstacle>(name, config, navigation_node);
     });
 
-    factory.registerBuilder<CheckCollisionFreeCcpPathAvailable>("checkCollisionFreeCcpPathAvailable",
-    [&navigation_node](const std::string &name, const BT::NodeConfiguration &config) 
-    {
-        return std::make_unique<CheckCollisionFreeCcpPathAvailable>(name, config, navigation_node);
-    });
-
-    //factory.registerNodeType<CheckIfTrue>("checkIfTrue");
-
     // Load the Behavior Tree
-    std::string xml_file = "/workspaces/ros2_jazzy/ros_ws/src/mowing_robot_bt/trees/mowing_robot_bt.xml";
+    std::string xml_file = "/workspaces/eduartrobotik_ros2_jazzy/ros_ws/src/mowing_robot_bt/trees/mowing_robot_bt.xml";
+    
     RCLCPP_INFO(main_node->get_logger(), "Loading Behavior Tree from: %s", xml_file.c_str());
     auto tree = factory.createTreeFromFile(xml_file);
 

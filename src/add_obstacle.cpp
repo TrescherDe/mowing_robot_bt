@@ -8,8 +8,6 @@ AddObstacle::AddObstacle(const std::string &name, const BT::NodeConfiguration &c
       tf_buffer_(std::make_shared<tf2_ros::Buffer>(nh_->get_clock())),
       tf_listener_(*tf_buffer_)
 {
-    // Initialize the service client
-    set_collision_free_client_ = nh_->create_client<std_srvs::srv::SetBool>("set_collision_free_path");
     obstacle_publisher_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("/eduard/fred/detected_obstacles", 1);
 
     // Load Homography matrix (example, adjust with the real values)
@@ -24,7 +22,7 @@ AddObstacle::AddObstacle(const std::string &name, const BT::NodeConfiguration &c
     homography_matrix_.at<double>(2, 1) = 0.0;
     homography_matrix_.at<double>(2, 2) = 1.0;
 
-    RCLCPP_INFO(nh_->get_logger(), "AddObstacle: Service client for 'set_collision_free_path' initialized.");
+    RCLCPP_INFO(nh_->get_logger(), "AddObstacle node initialized.");
 }
 
 
@@ -183,34 +181,6 @@ BT::NodeStatus AddObstacle::tick()
     RCLCPP_INFO(nh_->get_logger(), "Added obstacle at map coordinates: x=%f, y=%f, z=%f", map_point.x, map_point.y, map_point.z);
 
     publishObstacles();
-
-    return BT::NodeStatus::SUCCESS;
-
-    if (!set_collision_free_client_->wait_for_service(std::chrono::seconds(5)))
-    {
-        RCLCPP_ERROR(nh_->get_logger(), "Service 'set_collision_free_path' is not available.");
-        return BT::NodeStatus::FAILURE;
-    }
-
-    auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
-    request->data = false;
-
-    auto future = set_collision_free_client_->async_send_request(request);
-
-    if (rclcpp::spin_until_future_complete(nh_, future) != rclcpp::FutureReturnCode::SUCCESS)
-    {
-        RCLCPP_ERROR(nh_->get_logger(), "Failed to call service 'set_collision_free_path'.");
-        return BT::NodeStatus::FAILURE;
-    }
-
-    auto response = future.get();
-    if (!response->success)
-    {
-        RCLCPP_ERROR(nh_->get_logger(), "Service call to 'set_collision_free_path' failed: %s", response->message.c_str());
-        return BT::NodeStatus::FAILURE;
-    }
-
-    RCLCPP_INFO(nh_->get_logger(), "Service call to 'set_collision_free_path' succeeded: %s", response->message.c_str());
 
     return BT::NodeStatus::SUCCESS;
 }
