@@ -7,7 +7,11 @@
 #include <cv_bridge/cv_bridge.hpp>
 #include <opencv2/opencv.hpp>
 #include "sensor_msgs/msg/image.hpp"
-#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>    
+
+#include <vision_msgs/msg/detection2_d_array.hpp>
+#include <vision_msgs/msg/detection2_d.hpp>
+#include <vision_msgs/msg/object_hypothesis_with_pose.hpp>
 
 // pybind11 for Python-C++ integration
 #include <pybind11/embed.h>  
@@ -35,6 +39,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr marked_image_pub_;
     rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_pub_;
+    rclcpp::Publisher<vision_msgs::msg::Detection2DArray>::SharedPtr bbox_pub_;
 
     pybind11::object detect_objects; // Member visibility matches the class
 

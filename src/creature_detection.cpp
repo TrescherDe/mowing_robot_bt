@@ -34,7 +34,7 @@ CreatureDetection::CreatureDetection(const std::string &name, const BT::NodeConf
     // Initialize Python interpreter
     py::initialize_interpreter();
 
-    py::module::import("sys").attr("path").attr("append")("/workspaces/ros2_jazzy/01_repos/PMBW_Object_Detection_In_Thermal_Images");
+    py::module::import("sys").attr("path").attr("append")("/workspaces/eduartrobotik_ros2_jazzy/01_repos/PMBW_Object_Detection_In_Thermal_Images");
 
     try 
     {
@@ -47,8 +47,9 @@ CreatureDetection::CreatureDetection(const std::string &name, const BT::NodeConf
         throw;
     }
     image_sub_ = nh_->create_subscription<sensor_msgs::msg::Image>("/thermal_image", 1,std::bind(&CreatureDetection::imageCallback, this, std::placeholders::_1));
-    marked_image_pub_ = nh_->create_publisher<sensor_msgs::msg::Image>("/marked_image", 1);
+    marked_image_pub_ = nh_->create_publisher<sensor_msgs::msg::Image>("/detected_creature/marked_image", 1);
     camera_info_pub_ = nh_->create_publisher<sensor_msgs::msg::CameraInfo>("/camera_info", 1);
+    bbox_pub_ = nh_->create_publisher<vision_msgs::msg::Detection2DArray>("/detected_creature/bboxes", 1);
 }
 
 void CreatureDetection::publishCameraInfo(const std_msgs::msg::Header &header)
@@ -56,8 +57,8 @@ void CreatureDetection::publishCameraInfo(const std_msgs::msg::Header &header)
     sensor_msgs::msg::CameraInfo camera_info_msg;
     camera_info_msg.header = header; // Use the same header as the image
 
-    camera_info_msg.width = 640;  // Match your image width
-    camera_info_msg.height = 480; // Match your image height
+    camera_info_msg.width = 640;  // Match the image width
+    camera_info_msg.height = 480; // Match the image height
 
     camera_info_msg.k = {1.0, 0.0, camera_info_msg.width / 2.0,
                          0.0, 1.0, camera_info_msg.height / 2.0,
@@ -107,7 +108,7 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
 
     if (!nn_ready_)
     {
-        std::string test_image_path = "/workspaces/ros2_jazzy/ros_ws/src/mowing_robot_bt/test_image/thermal_image_2024-11-26_13-28-07_000460.jpg";
+        std::string test_image_path = "/workspaces/eduartrobotik_ros2_jazzy/ros_ws/src/mowing_robot_bt/test_image/thermal_image_2024-11-26_13-28-07_000460.jpg";
         cv_image = cv::imread(test_image_path, cv::IMREAD_COLOR);
 
         if (cv_image.empty())
@@ -122,7 +123,7 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
         if (!paths_loaded)
         {
             RCLCPP_INFO(nh_->get_logger(), "Simulating hedgehog image data");
-            std::string test_images_folder = "/workspaces/ros2_jazzy/ros_ws/src/mowing_robot_bt/test_video2/";
+            std::string test_images_folder = "/workspaces/eduartrobotik_ros2_jazzy/ros_ws/src/mowing_robot_bt/test_video/";
             for (const auto &entry : fs::directory_iterator(test_images_folder))
             {
                 if (entry.is_regular_file())
@@ -189,6 +190,8 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
             RCLCPP_INFO(nh_->get_logger(), "Detections found: %ld", detection_list.size());
         }
 
+        auto bboxes = vision_msgs::msg::Detection2DArray();
+
         for (auto item : detection_list)
         {
             py::dict detection = item.cast<py::dict>();
@@ -206,8 +209,8 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
             if (rois_info.shape.size() != 2 || rois_info.shape[1] != 4) {
                 RCLCPP_ERROR(nh_->get_logger(), "ROIs shape invalid: [%ld, %ld]", rois_info.shape[0], rois_info.shape[1]);
                 return false;
-            }
-
+            }            
+            
             // Iterate over each bounding box
             float* rois_ptr = static_cast<float*>(rois_info.ptr);
             for (size_t i = 0; i < rois_info.shape[0]; ++i) {
@@ -220,11 +223,25 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
                 float y_min = std::min(bbox[1], bbox[3]);
                 float y_max = std::max(bbox[1], bbox[3]);
 
+                float x_center = (x_min + x_max) / 2.0;
+                float y_center = (y_min + y_max) / 2.0;
+                float width = x_max - x_min;
+                float height = y_max - y_min;
+
+                vision_msgs::msg::Detection2D detection_msg;
+                detection_msg.bbox.center.position.x = x_center;
+                detection_msg.bbox.center.position.y = y_center;
+                detection_msg.bbox.size_x = width;
+                detection_msg.bbox.size_y = height;
+
                 // Convert "scores" from numpy.ndarray to float
                 py::array_t<float> scores_array = detection["scores"].cast<py::array_t<float>>();
                 auto scores_info = scores_array.request();
                 float* scores_ptr = static_cast<float*>(scores_info.ptr);
                 float score = scores_ptr[i];
+
+                vision_msgs::msg::ObjectHypothesisWithPose hypothesis;
+                hypothesis.hypothesis.score = score;
 
                 // Convert "class_ids" from numpy.ndarray to int
                 py::array_t<int> class_ids_array = detection["class_ids"].cast<py::array_t<int>>();
@@ -243,6 +260,7 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
                 {
                     label = "Hedgehog: " + std::to_string(score);
                     hedgehog_detected = true;
+                    
                 }
                 else
                 {
@@ -250,6 +268,11 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
                 }                
                 cv::putText(cv_image, label, cv::Point(x_min, y_min - 10), 
                             cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+
+                hypothesis.hypothesis.class_id = label;
+                detection_msg.results.push_back(hypothesis);
+
+                bboxes.detections.push_back(detection_msg);
 
                 if(m_debug)
                 {
@@ -267,7 +290,7 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
         }
 
         std_msgs::msg::Header header = msg->header;
-        header.frame_id = "map"; // match RViz Fixed Frame
+        header.frame_id = "eduard/fred/base_footprint"; // match RViz Fixed Frame
         // Convert the modified OpenCV image back to a ROS message
         sensor_msgs::msg::Image::SharedPtr marked_msg = cv_bridge::CvImage(
             header, 
@@ -275,10 +298,15 @@ bool CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
             cv_image
         ).toImageMsg();
 
-        // Publish the marked image        
-        marked_image_pub_->publish(*marked_msg);
         // Add the CameraInfo
         publishCameraInfo(header);
+
+        // Publish the marked image        
+        marked_image_pub_->publish(*marked_msg);
+
+        // Publish the detections
+        bbox_pub_->publish(bboxes);
+        
 
         return hedgehog_detected;
     }
