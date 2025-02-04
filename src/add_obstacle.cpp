@@ -9,7 +9,7 @@ AddObstacle::AddObstacle(const std::string &name, const BT::NodeConfiguration &c
       tf_listener_(*tf_buffer_)
 {
     obstacle_publisher_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("/eduard/fred/detected_obstacles", 1);
-    bbox_sub_ = nh_->create_subscription<vision_msgs::msg::Detection2DArray>("/detected_creature/bboxes", 1, std::bind(&AddObstacle::bboxCallback, this, std::placeholders::_1));
+    bbox_sub_ = nh_->create_subscription<vision_msgs::msg::Detection2DArray>("/creature_detection/bboxes", 1, std::bind(&AddObstacle::bboxCallback, this, std::placeholders::_1));
    
     // Load Homography matrix (example, adjust with the real values)
     homography_matrix_ = cv::Mat::eye(3, 3, CV_64F);
