@@ -18,7 +18,6 @@ find_package(vision_msgs REQUIRED)
 # Include directories
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include  # Include the package's header files
-  /workspaces/eduartrobotik_ros2_jazzy/01_repos/PMBW_Object_Detection_In_Thermal_Images # Include EfficientDet repo
   ${Python3_INCLUDE_DIRS}  # Include Python headers
 )
 
@@ -32,9 +31,11 @@ ament_target_dependencies(task_planner behaviortree_cpp_v3 rclcpp sensor_msgs cv
 install(TARGETS task_planner
   DESTINATION lib/${PROJECT_NAME})
 
-# Install the launch directory
-#install(DIRECTORY launch/
-#  DESTINATION share/${PROJECT_NAME}/launch)
+# ✅ Add Python NeuralNet script
+install(PROGRAMS
+  scripts/NeuralNet.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 # Install XML files for Behavior Trees
 install(DIRECTORY trees
