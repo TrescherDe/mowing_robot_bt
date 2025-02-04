@@ -13,20 +13,10 @@
 #include <vision_msgs/msg/detection2_d.hpp>
 #include <vision_msgs/msg/object_hypothesis_with_pose.hpp>
 
-// pybind11 for Python-C++ integration
-#include <pybind11/embed.h>  
-#include <pybind11/pybind11.h> 
-
-#pragma GCC visibility push(default)
-
-namespace py = pybind11;
-
 class CreatureDetection : public BT::ConditionNode
 {
 public:
     CreatureDetection(const std::string &name, const BT::NodeConfiguration &config, const rclcpp::Node::SharedPtr &node);
-    ~CreatureDetection();
-
     static BT::PortsList providedPorts();
     BT::NodeStatus tick() override;
 
@@ -40,9 +30,8 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr marked_image_pub_;
     rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_pub_;
     rclcpp::Publisher<vision_msgs::msg::Detection2DArray>::SharedPtr bbox_pub_;
-
-    pybind11::object detect_objects; // Member visibility matches the class
-
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_raw_pub_;
+    
     bool object_detected_ = false;
     bool nn_ready_ = false;
     bool m_debug = false;
@@ -51,7 +40,5 @@ private:
     float threshold = 0.8;
     float nms_threshold = 0.05;
 };
-
-#pragma GCC visibility pop
 
 #endif // CREATURE_DETECTION_HPP
