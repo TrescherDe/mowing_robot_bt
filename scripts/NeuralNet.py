@@ -17,7 +17,7 @@ InputVStreamParams, OutputVStreamParams, InputVStreams, OutputVStreams,FormatTyp
 class NeuralNet(Node):
     def __init__(self):
         super().__init__('neural_net')
-        self.subscription = self.create_subscription(Image, '/creature_detection/image_raw', self.image_callback, 1)
+        self.image_sub_ = self.create_subscription(Image, '/creature_detection/image_raw', self.image_callback, 1)
         self.bbox_pub_ = self.create_publisher(Detection2DArray, '/creature_detection/bboxes', 1)
         self.bridge = CvBridge()
         self.m_debug = False
@@ -54,7 +54,7 @@ class NeuralNet(Node):
             self.get_logger().info(f"Input shape after batch dimension: {image_padded.shape}")
 
         target = VDevice()
-        hef_path = '/home/autonohm/ros_ws/src/mowing_robot_bt/model/hedgehog_yolov8n.hef'
+        hef_path = '/workspaces/ros_jazzy/ros_ws/src/mowing_robot_bt/model/hedgehog_yolov8n.hef'
         hef = HEF(hef_path)
 
         # Configure network groups
@@ -91,14 +91,16 @@ class NeuralNet(Node):
 
         
     def publish_detections(self, output_data):
-        if output_data.shape[2] == 0 or output_data.shape[1] == 0:
-            self.get_logger().warn("No detections found. Skipping publish.")
-            return
 
         detection_array = Detection2DArray()
         detection_array.header = Header()
         detection_array.header.stamp = self.get_clock().now().to_msg()
-        detection_array.header.frame_id = "map"     
+        detection_array.header.frame_id = "thermal_camera_frame"   
+
+        if output_data.shape[2] == 0 or output_data.shape[1] == 0:
+            self.get_logger().warn("No detections found. Publishing empty message.")
+            self.bbox_pub_.publish(detection_array)
+            return
 
         # Iterate over detected objects
         for i in range(output_data.shape[2]):
@@ -123,7 +125,7 @@ class NeuralNet(Node):
                 detection = Detection2D()
                 detection.header = Header()
                 detection.header.stamp = self.get_clock().now().to_msg()
-                detection.header.frame_id = "map"
+                detection.header.frame_id = "thermal_camera_frame"
 
                 position_center = Point2D()
                 position_center.x = float((xmin + xmax) / 2.0)
@@ -161,11 +163,12 @@ class NeuralNet(Node):
                 self.get_logger().error(f"IndexError: output_data[{i}] is out of bounds.")
                 continue
 
+        self.bbox_pub_.publish(detection_array)
         if detection_array.detections:
-            self.bbox_pub_.publish(detection_array)
-            self.get_logger().info(f"Published {len(detection_array.detections)} detections.")
+            self.get_logger().info(f"Published {len(detection_array.detections)} valid detections.")
         else:
-            self.get_logger().warn("No valid detections after filtering. Skipping publish.")
+            self.get_logger().warn("No valid detections after filtering. Published empty message.")
+
 
 
     def letterbox_image(self, image, model_w=640, model_h=640):
