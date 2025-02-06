@@ -22,18 +22,31 @@ include_directories(
 )
 
 # Add the executables
-add_executable(task_planner src/main.cpp src/creature_detection.cpp src/add_obstacle.cpp)
+add_executable(task_planner src/main.cpp src/creature_detection.cpp)
 
 # Specify dependencies for the target
-ament_target_dependencies(task_planner behaviortree_cpp_v3 rclcpp sensor_msgs cv_bridge Python3 tf2 tf2_ros tf2_geometry_msgs OpenCV geometry_msgs vision_msgs)
+ament_target_dependencies(task_planner 
+  behaviortree_cpp_v3
+  rclcpp
+  sensor_msgs
+  cv_bridge
+  Python3
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  OpenCV
+  geometry_msgs
+  vision_msgs)
 
 # Install the executable
 install(TARGETS task_planner
   DESTINATION lib/${PROJECT_NAME})
 
-# ✅ Add Python NeuralNet script
+# Add Python NeuralNet script
 install(PROGRAMS
   scripts/NeuralNet.py
+  scripts/IPM.py
+  scripts/static_tf2_publisher.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

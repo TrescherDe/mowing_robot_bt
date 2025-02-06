@@ -1,7 +1,6 @@
 #include "behaviortree_cpp_v3/bt_factory.h"
 #include "rclcpp/rclcpp.hpp"
 #include "creature_detection.hpp"
-#include "add_obstacle.hpp"
 #include "behaviortree_cpp_v3/loggers/bt_zmq_publisher.h"
 
 #include <chrono>
@@ -23,12 +22,6 @@ int main(int argc, char **argv)
     [&vision_node](const std::string &name, const BT::NodeConfiguration &config) 
     {
         return std::make_unique<CreatureDetection>(name, config, vision_node);
-    });
-
-    factory.registerBuilder<AddObstacle>("addObstacle",
-    [&navigation_node](const std::string &name, const BT::NodeConfiguration &config) 
-    {
-        return std::make_unique<AddObstacle>(name, config, navigation_node);
     });
 
     // Load the Behavior Tree
