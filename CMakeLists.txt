@@ -46,6 +46,7 @@ install(TARGETS task_planner
 install(PROGRAMS
   scripts/NeuralNet.py
   scripts/IPM.py
+  scripts/IPM_calibration.py
   scripts/static_tf2_publisher.py
   DESTINATION lib/${PROJECT_NAME}
 )
@@ -53,5 +54,10 @@ install(PROGRAMS
 # Install XML files for Behavior Trees
 install(DIRECTORY trees
   DESTINATION share/${PROJECT_NAME}/trees)
+
+# Install launch files
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
 
 ament_package()
