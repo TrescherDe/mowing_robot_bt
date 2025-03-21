@@ -55,12 +55,12 @@ class StaticTFPublisher(Node):
 
         # Empirically found values: tilt of the camera ~ -0.01, x = -0.43 (due to zoom offsett i guess!)
 
-        transform.transform.translation.x = -0.43 # normally it would be 5cm offset to base_link
+        transform.transform.translation.x = 0.05 # normally it would be 5cm offset to base_link
         transform.transform.translation.y = 0.0
         transform.transform.translation.z = 0.17  # Camera height
 
         # Rotation: 90° Z then 90° X
-        q = tf_transformations.quaternion_from_euler(-1.5708 - 0.01, 0, -1.5708)  # (π/2, 0, π/2)
+        q = tf_transformations.quaternion_from_euler(-1.5708, 0, -1.5708)  # (π/2, 0, π/2)
         transform.transform.rotation.x = q[0]
         transform.transform.rotation.y = q[1]
         transform.transform.rotation.z = q[2]
