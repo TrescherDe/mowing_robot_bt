@@ -73,7 +73,94 @@ ros2 run optris_drivers2 optris_imager_node
 ros2 topic pub /thermal_image sensor_msgs/Image -r 5
 ```
 
+## Integration with the Eduard Robot
+
+The system is modular and can be tested, for example, on the **Eduard robot from EduArt Robotik GmbH**.
+
+### Steps to Integrate
+
+1. **Connect to the Robot**  
+   Connect your device (e.g., Raspberry Pi or laptop) to the robot's Wi-Fi network.
+
+2. **Check Available Topics**  
+   Use the following command to verify communication:
+   ```bash
+   ros2 topic list
+   ```
+3. **Verify All Necessary Docker Containers Are Running**  
+   Ensure that the required Docker containers are active on the robot.
+
+   - Connect to the robot via SSH:
+     ```bash
+     ssh user@<robot-ip>
+     ```
+
+   - Check the currently running containers:
+     ```bash
+     docker ps
+     ```
+
+   - If the **sensor container** is not running:
+     ```bash
+     cd edu_docker/sensor/rplidar/
+     docker compose up -d
+     ```
+
+   - If the **SLAM Toolbox** is not running:
+     ```bash
+     cd edu_docker/slam_tool_box/
+     docker compose up -d
+     ```
+
+5. **Edit the Nav2 Configuration**  
+   On the Eduard robot, open the following file:
+   ```bash
+   nav2/launch_content/navigation.yaml
+   ```
+4. **Extend the Costmap Configuration**  
+  In both the local and global costmap sections, locate and update the observation_sources entry.
+  The default typically looks like this:
+  ```bash
+  observation_sources: scan
+  scan:
+    topic: scan
+    max_obstacle_height: 2.0
+    clearing: True
+    marking: True
+    data_type: "LaserScan"
+    raytrace_max_range: 3.0
+    raytrace_min_range: 0.0
+    obstacle_max_range: 2.5
+    obstacle_min_range: 0.0
+  ```
+  Update it to include the detected_creatures:
+  ```bash
+  observation_sources: scan detected_creatures
+  scan:
+    topic: scan
+    max_obstacle_height: 2.0
+    clearing: True
+    marking: True
+    data_type: "LaserScan"
+    raytrace_max_range: 3.0
+    raytrace_min_range: 0.0
+    obstacle_max_range: 2.5
+    obstacle_min_range: 0.0
+  detected_creatures:
+    obstacle_topic: "/eduard/fred/detected_creatures"
+    max_obstacle_height: 0.5
+    clearing: False
+    marking: True
+    data_type: "PointCloud2"
+    obstacle_max_range: 2.0
+    obstacle_min_range: 0.2
+  ```
+5. **Start the Nav2 docker on the Robot**
+    ```bash
+     cd edu_docker/nav2/
+     docker compose up -d
+     ```
+    
 ## Notes
 - Ensure all dependencies are installed correctly.
 - The task planner relies on camera input; you can simulate it with dummy messages if necessary.
-- Adjust paths and URLs according to your setup.
