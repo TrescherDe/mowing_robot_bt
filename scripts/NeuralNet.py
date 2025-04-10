@@ -13,6 +13,11 @@ from std_msgs.msg import Header
 from hailo_platform import (HEF, VDevice, HailoStreamInterface, InferVStreams, ConfigureParams,
 InputVStreamParams, OutputVStreamParams, InputVStreams, OutputVStreams,FormatType)
 
+from pathlib import Path
+from ament_index_python.packages import get_package_share_directory
+
+# Get path to the 'mowing_robot_bt' package share directory
+package_share_path = Path(get_package_share_directory('mowing_robot_bt'))
 
 class NeuralNet(Node):
     def __init__(self):
@@ -54,8 +59,10 @@ class NeuralNet(Node):
             self.get_logger().info(f"Input shape after batch dimension: {image_padded.shape}")
 
         target = VDevice()
-        hef_path = '/workspaces/ros_jazzy/ros_ws/src/mowing_robot_bt/model/hedgehog_yolov8n.hef'
-        hef = HEF(hef_path)
+
+        hef_path = package_share_path / 'model' / 'hedgehog_yolov8n.hef'
+
+        hef = HEF(str(hef_path))
 
         # Configure network groups
         configure_params = ConfigureParams.create_from_hef(hef=hef, interface=HailoStreamInterface.PCIe)

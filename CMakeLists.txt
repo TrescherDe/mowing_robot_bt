@@ -60,4 +60,9 @@ install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
 
+# Install launthe model
+install(DIRECTORY model/
+  DESTINATION share/${PROJECT_NAME}/model
+)
+
 ament_package()

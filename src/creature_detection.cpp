@@ -4,6 +4,9 @@
 #include <filesystem> 
 namespace fs = std::filesystem;
 
+fs::path current_file_creature_detection = __FILE__;                   // Absolute path to the current source file
+fs::path base_path_creature_detection = current_file_creature_detection.parent_path();    // Directory where this .cpp file lives
+
 CreatureDetection::CreatureDetection(const std::string &name, const BT::NodeConfiguration &config, const rclcpp::Node::SharedPtr &node)
     : BT::ConditionNode(name, config), nh_(node)
 {
@@ -142,7 +145,8 @@ void CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
 
     if (!nn_ready_)
     {
-        std::string test_image_path = "/workspaces/ros_jazzy/ros_ws/src/mowing_robot_bt/demo_image/thermal_image_2024-11-26_13-34-52_000142.tiff";
+        fs::path test_image_path = base_path_creature_detection / "../demo_image/thermal_image_2024-11-26_13-34-52_000142.tiff";
+        std::string test_image = test_image_path.string();
         cv_image = cv::imread(test_image_path, cv::IMREAD_UNCHANGED);  //Load as MONO16
 
         if (cv_image.empty())
@@ -156,7 +160,8 @@ void CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
         if (!paths_loaded)
         {
             RCLCPP_INFO(nh_->get_logger(), "Simulating hedgehog image data");
-            std::string test_images_folder = "/workspaces/ros_jazzy/ros_ws/src/mowing_robot_bt/demo_image";
+            fs::path test_images_folder_path = base_path_creature_detection / "../demo_image";
+            std::string test_images_folder = test_images_folder_path.string();
             for (const auto &entry : fs::directory_iterator(test_images_folder))
             {
                 if (entry.is_regular_file())

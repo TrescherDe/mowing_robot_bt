@@ -6,6 +6,14 @@
 #include <chrono>
 #include <thread>
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
+fs::path current_file = __FILE__;                   // Absolute path to the current source file
+fs::path base_path = current_file.parent_path();    // Directory where this .cpp file lives
+
+
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
@@ -25,7 +33,8 @@ int main(int argc, char **argv)
     });
 
     // Load the Behavior Tree
-    std::string xml_file = "/workspaces/eduartrobotik_ros2_jazzy/ros_ws/src/mowing_robot_bt/trees/mowing_robot_bt.xml";
+    fs::path xml_file_path = base_path / "../trees/mowing_robot_bt.xml";
+    std::string xml_file = xml_file_path.string();
     
     RCLCPP_INFO(main_node->get_logger(), "Loading Behavior Tree from: %s", xml_file.c_str());
     auto tree = factory.createTreeFromFile(xml_file);
