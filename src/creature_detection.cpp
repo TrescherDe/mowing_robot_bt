@@ -84,6 +84,7 @@ void CreatureDetection::detectionCallback(const vision_msgs::msg::Detection2DArr
     }
 
     cv::Mat marked_image = thermal_image_.clone();  // Clone to avoid modifying original
+    cv::normalize(thermal_image_, marked_image, 0, 65535, cv::NORM_MINMAX, CV_16UC1); // Normalize to 16-bit range
     is_image_processed_ = true;
 
     // Iterate over detections
@@ -141,7 +142,7 @@ void CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
 
     if (!nn_ready_)
     {
-        std::string test_image_path = "/workspaces/ros_jazzy/ros_ws/src/mowing_robot_bt/test_image/thermal_image_2024-11-26_13-28-07_000460.tiff";
+        std::string test_image_path = "/workspaces/ros_jazzy/ros_ws/src/mowing_robot_bt/demo_image/thermal_image_2024-11-26_13-34-52_000142.tiff";
         cv_image = cv::imread(test_image_path, cv::IMREAD_UNCHANGED);  //Load as MONO16
 
         if (cv_image.empty())
@@ -155,7 +156,7 @@ void CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
         if (!paths_loaded)
         {
             RCLCPP_INFO(nh_->get_logger(), "Simulating hedgehog image data");
-            std::string test_images_folder = "/workspaces/ros_jazzy/ros_ws/src/mowing_robot_bt/test_video";
+            std::string test_images_folder = "/workspaces/ros_jazzy/ros_ws/src/mowing_robot_bt/demo_image";
             for (const auto &entry : fs::directory_iterator(test_images_folder))
             {
                 if (entry.is_regular_file())
