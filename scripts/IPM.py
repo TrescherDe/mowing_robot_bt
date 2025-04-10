@@ -100,7 +100,7 @@ class IPMExample(Node):
 
             if ipm_calibration:
                 # Transform projected points to thermal camera frame for comparison
-                transformed_points = self.transform_points_to_thermal(points)
+                transformed_points = self.transform_points_to_frame(points)
                 self.compute_mae(transformed_points)
 
             self.publish_pointcloud(points, msg.header, radius=0.15, num_circle_points=16)
@@ -129,6 +129,12 @@ class IPMExample(Node):
             self.get_logger().warn("No valid projected points, skipping PointCloud2 publishing.")
             return
 
+        # Transform points from base_link to map frame
+        transformed_points = self.transform_points_to_frame(points, "eduard/fred/base_link", "eduard/fred/map")
+        if not transformed_points:
+            self.get_logger().warn("No valid transformed points, skipping PointCloud2 publishing.")
+            return
+
         cloud_msg = PointCloud2()
         cloud_msg.header = header
         cloud_msg.header.frame_id = "eduard/fred/map"
@@ -136,8 +142,8 @@ class IPMExample(Node):
 
         cloud_points = []
 
-        for x, y, z in points:
-            # Add the center point
+        for x, y, z in transformed_points:
+            # Add the center point (already transformed)
             cloud_points.append((x, y, z))
 
             # Add circular points around the center
@@ -168,7 +174,7 @@ class IPMExample(Node):
 
         self.pointcloud_pub.publish(cloud_msg)
 
-    def transform_points_to_thermal(self, points, frame_from="eduard/fred/base_link", frame_to="thermal_camera_frame"):
+    def transform_points_to_frame(self, points, frame_from="eduard/fred/base_link", frame_to="eduard/fred/map"):
         """Transforms a list of points from 'frame_from' to 'frame_to' using TF2, ensuring time validity."""
         transformed_points = []
 
