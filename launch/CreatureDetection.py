@@ -20,11 +20,11 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # IPM Calibration (Python)
+        # Neural Net (Python)
         Node(
             package='mowing_robot_bt',
-            executable='IPM_calibration.py',
-            name='IPM_calibration',
+            executable='NeuralNet.py',
+            name='NeuralNet',
             output='screen'
         ),
 
@@ -34,5 +34,5 @@ def generate_launch_description():
             executable='IPM.py',
             name='IPM',
             output='screen'
-        ),
+        )
     ])
