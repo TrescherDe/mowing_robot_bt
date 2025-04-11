@@ -100,7 +100,8 @@ More details: https://docs.docker.com/engine/install/binaries/#install-daemon-an
            "theumletteam.umlet"
          ]
        }
-     }
+     },
+	"postCreateCommand": "/bin/bash -c \"source /opt/creature_detection/bin/activate && pip install rosdep && pip install 'numpy<2' && sed -i 's|/workspaces/eduartrobotik_ros2_jazzy|/workspaces/ros2_jazzy|' ~/.bashrc\""
    }
    ```
    5. Navigate into your main folder (e.g. `ros2_jazzy`) in the terminal:
