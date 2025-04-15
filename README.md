@@ -1,6 +1,7 @@
 # Mowing Robot Behavior Tree (mowing_robot_bt)
 
-This repository provides a ROS2-based creature detection node used in a behavior tree for an autonomous mowing robot.
+This repository provides a ROS2-based creature detection node used in a behavior tree for an autonomous mowing robot.  
+The dataset used for training the model to detect hedgehogs can be found here: https://github.com/TrescherDe/hedgehog_dataset
 
 ## Setup Instructions
 
