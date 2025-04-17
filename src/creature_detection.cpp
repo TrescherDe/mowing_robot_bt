@@ -89,6 +89,7 @@ void CreatureDetection::detectionCallback(const vision_msgs::msg::Detection2DArr
     cv::Mat marked_image = thermal_image_.clone();  // Clone to avoid modifying original
     cv::normalize(thermal_image_, marked_image, 0, 65535, cv::NORM_MINMAX, CV_16UC1); // Normalize to 16-bit range
     is_image_processed_ = true;
+    creature_detected_ = false;
 
     // Iterate over detections
     for (const auto &detection : msg->detections)
@@ -112,10 +113,6 @@ void CreatureDetection::detectionCallback(const vision_msgs::msg::Detection2DArr
         {
             nn_ready_ = true;
             creature_detected_ = true;
-        }
-        else
-        {
-            creature_detected_ = false;
         }
 
         // Put label (class_id) above the box
@@ -164,7 +161,7 @@ void CreatureDetection::processImage(const sensor_msgs::msg::Image::SharedPtr ms
         if (!paths_loaded)
         {
             RCLCPP_INFO(nh_->get_logger(), "Simulating hedgehog image data");
-            fs::path test_images_folder_path = base_path_creature_detection / "../demo_image";
+            fs::path test_images_folder_path = base_path_creature_detection / "../test_video";
             std::string test_images_folder = test_images_folder_path.string();
             for (const auto &entry : fs::directory_iterator(test_images_folder))
             {
