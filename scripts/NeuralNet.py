@@ -22,12 +22,12 @@ package_share_path = Path(get_package_share_directory('mowing_robot_bt'))
 class NeuralNet(Node):
     def __init__(self):
         super().__init__('neural_net')
-        self.image_sub_ = self.create_subscription(Image, '/creature_detection/image_raw', self.image_callback, 1)
+        self.image_sub_ = self.create_subscription(Image, '/creature_detection/image_raw', self.imageCallback, 1)
         self.bbox_pub_ = self.create_publisher(Detection2DArray, '/creature_detection/bboxes', 1)
         self.bridge = CvBridge()
         self.m_debug = False
 
-    def image_callback(self, msg):
+    def imageCallback(self, msg):
         """ Callback function for processing incoming images """
         self.get_logger().info("Received Image for Processing.")
 
@@ -46,7 +46,7 @@ class NeuralNet(Node):
         image_rgb = cv2.cvtColor(thermal_image_float, cv2.COLOR_GRAY2RGB)
 
         # Apply letterbox padding
-        image_padded, scale, pad_w, pad_h = self.letterbox_image(image_rgb)
+        image_padded, scale, pad_w, pad_h = self.letterboxImage(image_rgb)
 
         if self.m_debug:
             self.get_logger().info(f"Image padded: Scale={scale}, Pad W={pad_w}, Pad H={pad_h}")
@@ -94,10 +94,10 @@ class NeuralNet(Node):
             print("Inference Output Shape:", output_data.shape)
             print("Inference Results:", output_data)
 
-        self.publish_detections(output_data)
+        self.publishDetections(output_data)
 
         
-    def publish_detections(self, output_data):
+    def publishDetections(self, output_data):
 
         detection_array = Detection2DArray()
         detection_array.header = Header()
@@ -178,7 +178,7 @@ class NeuralNet(Node):
 
 
 
-    def letterbox_image(self, image, model_w=640, model_h=640):
+    def letterboxImage(self, image, model_w=640, model_h=640):
         """ Resize and pad image while maintaining aspect ratio """
         orig_h, orig_w = image.shape[:2]
 

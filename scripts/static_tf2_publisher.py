@@ -17,9 +17,9 @@ class StaticTFPublisher(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
     
-        self.timer = self.create_timer(0.5, self.check_and_publish_transforms)
+        self.timer = self.create_timer(0.5, self.checkAndPublishTransforms)
 
-    def check_and_publish_transforms(self):
+    def checkAndPublishTransforms(self):
         """ Check if base_link -> map exists. If not, publish base_link at z=0.04 """
         try:
             # Check for transform availability
@@ -44,18 +44,16 @@ class StaticTFPublisher(Node):
             self.tf_broadcaster.sendTransform(base_link_transform)
 
         # Always publish static transform for the thermal camera
-        self.publish_camera_transform()
+        self.publishCameraTransform()
 
-    def publish_camera_transform(self):
+    def publishCameraTransform(self):
         """ Publishes the transform from /eduard/fred/base_link to /thermal_camera_frame """
         transform = TransformStamped()
         transform.header.stamp = self.get_clock().now().to_msg()
         transform.header.frame_id = "eduard/fred/base_link"
         transform.child_frame_id = "thermal_camera_frame"
 
-        # Empirically found values: tilt of the camera ~ -0.01, x = -0.43 (due to zoom offsett i guess!)
-
-        transform.transform.translation.x = 0.05 # normally it would be 5cm offset to base_link
+        transform.transform.translation.x = 0.05 # 5 cm offset to base_link
         transform.transform.translation.y = 0.0
         transform.transform.translation.z = 0.17  # Camera height
 

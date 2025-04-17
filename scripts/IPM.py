@@ -32,21 +32,21 @@ class IPMExample(Node):
         self.camera_info = None
         self.ipm = None
 
-        self.create_subscription(CameraInfo, '/camera_info', self.camera_info_callback, 1)
-        self.create_subscription(Detection2DArray, '/creature_detection/bboxes', self.bbox_callback, 1)
+        self.create_subscription(CameraInfo, '/camera_info', self.cameraInfoCallback, 1)
+        self.create_subscription(Detection2DArray, '/creature_detection/bboxes', self.bboxCallback, 1)
 
         # Define the ground plane (normal is in z-direction)
         self.plane = Plane()
         self.plane.coef = [0.0, 0.0, -1.0, -0.04] # is defined from base link -> the map is 4cm below base_link
 
-    def camera_info_callback(self, msg: CameraInfo):
+    def cameraInfoCallback(self, msg: CameraInfo):
         """Updates camera parameters when receiving /camera_info."""
         self.camera_info = msg
 
         self.ipm = IPM(self.tf_buffer, self.camera_info, distortion=True)
         self.get_logger().info("Received CameraInfo and initialized IPM.")
 
-    def bbox_callback(self, msg: Detection2DArray):
+    def bboxCallback(self, msg: Detection2DArray):
         """Processes bounding boxes and projects them to world coordinates."""
         if self.ipm is None:
             self.get_logger().warn("No CameraInfo received yet. Cannot perform IPM.")
@@ -64,9 +64,7 @@ class IPMExample(Node):
             for detection in msg.detections:
                 bbox = detection.bbox
                 x_center = bbox.center.position.x
-                y_center = bbox.center.position.y
-
-                
+                y_center = bbox.center.position.y                
 
                 if ipm_calibration:
                     # Adjust y position to 1/3 of the height from the bottom
@@ -100,10 +98,10 @@ class IPMExample(Node):
 
             if ipm_calibration:
                 # Transform projected points to thermal camera frame for comparison
-                transformed_points = self.transform_points_to_frame(points)
-                self.compute_mae(transformed_points)
+                transformed_points = self.transformPointsToFrame(points)
+                self.computeMae(transformed_points)
 
-            self.publish_pointcloud(points, msg.header, radius=0.15, num_circle_points=16)
+            self.publishPointcloud(points, msg.header, radius=0.15, num_circle_points=16)
 
         else:
             # debug camera projection plane
@@ -123,14 +121,14 @@ class IPMExample(Node):
             point_cloud = create_cloud_xyz32(header, mapped_points)
             self.pointcloud_pub.publish(point_cloud)
 
-    def publish_pointcloud(self, points, header, radius=0.15, num_circle_points=16):
+    def publishPointcloud(self, points, header, radius=0.15, num_circle_points=16):
         """Converts a list of (x, y, z) points into a PointCloud2 message with circular area points."""
         if not points:
             self.get_logger().warn("No valid projected points, skipping PointCloud2 publishing.")
             return
 
         # Transform points from base_link to map frame
-        transformed_points = self.transform_points_to_frame(points, "eduard/fred/base_link", "eduard/fred/map")
+        transformed_points = self.transformPointsToFrame(points, "eduard/fred/base_link", "eduard/fred/map")
         if not transformed_points:
             self.get_logger().warn("No valid transformed points, skipping PointCloud2 publishing.")
             return
@@ -174,7 +172,7 @@ class IPMExample(Node):
 
         self.pointcloud_pub.publish(cloud_msg)
 
-    def transform_points_to_frame(self, points, frame_from="eduard/fred/base_link", frame_to="eduard/fred/map"):
+    def transformPointsToFrame(self, points, frame_from="eduard/fred/base_link", frame_to="eduard/fred/map"):
         """Transforms a list of points from 'frame_from' to 'frame_to' using TF2, ensuring time validity."""
         transformed_points = []
 
@@ -195,7 +193,7 @@ class IPMExample(Node):
 
         return transformed_points
 
-    def compute_mae(self, projected_points):
+    def computeMae(self, projected_points):
         """Computes and prints the Mean Absolute Error (MAE) for projected points."""
         # Define the expected distances in meters (already in thermal camera frame)
         expected_distances = np.arange(0.55, 3.75, 0.2)  # 0.55, 0.75, 0.95, ..., 3.55

@@ -4,7 +4,7 @@
 #include <filesystem> 
 namespace fs = std::filesystem;
 
-fs::path current_file_creature_detection = __FILE__;                   // Absolute path to the current source file
+fs::path current_file_creature_detection = __FILE__;                                      // Absolute path to the current source file
 fs::path base_path_creature_detection = current_file_creature_detection.parent_path();    // Directory where this .cpp file lives
 
 CreatureDetection::CreatureDetection(const std::string &name, const BT::NodeConfiguration &config, const rclcpp::Node::SharedPtr &node)
@@ -59,12 +59,12 @@ BT::PortsList CreatureDetection::providedPorts()
 
 BT::NodeStatus CreatureDetection::tick()
 {
-    if (object_detected_)
+    if (creature_detected_)
     {
-        RCLCPP_INFO(nh_->get_logger(), "Object detected in image.");
+        RCLCPP_INFO(nh_->get_logger(), "Creature detected in image.");
         return BT::NodeStatus::SUCCESS;
     }
-    RCLCPP_INFO(nh_->get_logger(), "No object detected.");
+    RCLCPP_INFO(nh_->get_logger(), "No creature detected.");
     return BT::NodeStatus::FAILURE;
 }
 
@@ -111,7 +111,11 @@ void CreatureDetection::detectionCallback(const vision_msgs::msg::Detection2DArr
         if(detection.results[0].hypothesis.class_id == "hedgehog")
         {
             nn_ready_ = true;
-            object_detected_ = true;
+            creature_detected_ = true;
+        }
+        else
+        {
+            creature_detected_ = false;
         }
 
         // Put label (class_id) above the box

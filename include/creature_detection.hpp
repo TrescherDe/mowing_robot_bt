@@ -33,7 +33,7 @@ private:
     rclcpp::Subscription<vision_msgs::msg::Detection2DArray>::SharedPtr bbox_sub_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_raw_pub_;
     
-    bool object_detected_ = false;
+    bool creature_detected_ = false;
     bool nn_ready_ = false;
     bool m_debug = false;
     bool is_image_processed_ = true;

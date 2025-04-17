@@ -9,7 +9,7 @@ class BBoxPublisher(Node):
     def __init__(self):
         super().__init__('bbox_publisher')
         self.publisher_ = self.create_publisher(Detection2DArray, '/creature_detection/bboxes', 1)
-        self.timer = self.create_timer(1.0, self.publish_bboxes)
+        self.timer = self.create_timer(1.0, self.publishBboxes)
         
         self.label_path = "/workspaces/ros_jazzy/ros_ws/src/mowing_robot_bt/IPM_calibration/labels"
         self.image_width = 640
@@ -17,13 +17,13 @@ class BBoxPublisher(Node):
         self.class_id = "hedgehog"
         self.m_debug = True
 
-    def get_sorted_label_files(self):
+    def getSortedLabelFiles(self):
         """ Get all label files sorted numerically based on timestamp suffix. """
         files = [f for f in os.listdir(self.label_path) if f.endswith(".txt")]
         files.sort(key=lambda x: int(x.split("_")[-1].split(".")[0]))
         return files
 
-    def yolo_to_bbox(self, class_id, x_center, y_center, width, height):
+    def yoloToBbox(self, class_id, x_center, y_center, width, height):
         """ Convert YOLO format (normalized) to absolute pixel values. """
         xmin = (x_center - width / 2) * self.image_width
         ymin = (y_center - height / 2) * self.image_height
@@ -31,9 +31,9 @@ class BBoxPublisher(Node):
         ymax = (y_center + height / 2) * self.image_height
         return xmin, ymin, xmax, ymax
 
-    def publish_bboxes(self):
+    def publishBboxes(self):
         """ Reads YOLO labels, converts to ROS2 messages, and publishes them. """
-        files = self.get_sorted_label_files()
+        files = self.getSortedLabelFiles()
         if not files:
             self.get_logger().warn("No label files found.")
             return
@@ -51,7 +51,7 @@ class BBoxPublisher(Node):
                         continue
                     
                     class_idx, x_center, y_center, width, height = map(float, parts)
-                    xmin, ymin, xmax, ymax = self.yolo_to_bbox(class_idx, x_center, y_center, width, height)
+                    xmin, ymin, xmax, ymax = self.yoloToBbox(class_idx, x_center, y_center, width, height)
 
                     detection = Detection2D()
                     detection.header = detection_array.header
