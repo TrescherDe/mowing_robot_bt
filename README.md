@@ -343,7 +343,70 @@ The system is modular and can be tested, for example, on the **Eduard robot from
      cd edu_docker/nav2/
      docker compose up -d
      ```
-    
+
+## Training of a custom detection model
+
+<details>
+<summary><strong>Training of a yolov8n model</strong></summary>
+
+1. Install ultralytics: https://github.com/ultralytics/ultralytics → `pip install ultralytics`
+
+2. Prepare the training data  
+    1. Setup a dataset folder containing the structure: `train/`, `val/`, `test/`  
+    2. Add a `yaml` in your dataset folder containing the paths to the train, val, and test dataset and the number of classes used, etc. For example:
+        ```
+        train: rgb_yolo/train
+        val: rgb_yolo/val
+        test: rgb_yolo/test
+        nc: 1
+        names: [hedgehog]
+        ```
+        You can use the hedgehog dataset used in the thesis by cloning the [hedgehog dataset repo](https://github.com/TrescherDe/hedgehog_dataset) and utilizing the [rgb_yolo](https://github.com/TrescherDe/hedgehog_dataset/tree/master/rgb_yolo) or [thermal_8bit_yolo](https://github.com/TrescherDe/hedgehog_dataset/tree/master/thermal_8bit_yolo) depending if you want to use RGB data or thermal data.
+
+3. Follow the Ultralytics training guide: https://docs.ultralytics.com/modes/train/  
+    Train a YOLO model using the terminal:  
+    ```
+    yolo task=detect mode=train data=<path_to_dataset.yaml> model=yolov8n.pt epochs=50 imgsz=640 patience=10 project=<path_to_logs> name=run
+    ```
+
+4. Ultralytics will provide a folder after training containing the weights named `best.pt` which you can use to detect on the data.
+
+5. Use this weight to test your model on your val / test data:  
+    ```
+    yolo task=detect mode=val model=<path_to_best.pt> data=<path_to_dataset.yaml>
+    ```
+    Note: the model weights should by default be in the logs folder → `logs/.../best.pt`
+
+Now you have a working object detection model for your data. Next, we will transform it to a format suitable for use on the AI Kit.
+
+1. To use the model on the AI Kit you first have to convert the model to ONNX:  
+    ```
+    yolo export model=<path_to_best.pt> format=onnx imgsz=640
+    ```
+
+2. Use the Hailo AI Software Suite Docker which you can download in the [Hailo Developer Zone](https://hailo.ai/developer-zone/) under “Software Downloads”:
+    ```
+    sudo docker run -it --rm \
+    --gpus all \
+    -v <path_to_calibration_data>:/workspace/calibration_data \
+    -v <path_to_weights>:/workspace/weights \
+    hailo_ai_sw_suite_2025-01:1
+    ```
+
+3. Use the Hailo Model Zoo command-line tool to convert the ONNX to the Hailo Executable Format (HEF format):
+    ```
+    hailomz compile yolov8n \
+    --ckpt /workspace/weights/<model.onnx> \
+    --hw-arch hailo8l \
+    --calib-path /workspace/calibration_data \
+    --classes 1 \
+    --performance
+    ```
+
+4. You're done. Adapt the path in the [NeuralNet node](https://github.com/TrescherDe/mowing_robot_bt/blob/main/scripts/NeuralNet.py) to your model weights if needed.
+</details>
+
 ## Notes
 - Ensure all dependencies are installed correctly.
 - The task planner relies on camera input; you can simulate it with dummy messages if necessary.
+- If you train a custom model with different class names, more classes, other image sizes, etc., you have to update the code to fit your configuration in the [NeuralNet node](https://github.com/TrescherDe/mowing_robot_bt/blob/main/scripts/NeuralNet.py)
